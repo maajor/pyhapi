@@ -151,6 +151,12 @@ def GetAvailableAssets(session, assetLibId):
 
     return asset_names
 
+def CreateInputNode(session, node_label):
+    nodeid = c_int32()
+    result =  HAPIlib.HAPI_CreateInputNode( byref(session), byref(nodeid), c_char_p(node_label.encode('utf-8'))) 
+    assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "CreateInputNode Failed with {0}".format(HAPI_Result(result).name)
+    return nodeid
+
 def CreateNode(
     session, 
     operator_name, 

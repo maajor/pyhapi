@@ -349,6 +349,75 @@ class HAPI_InputType(enum.IntEnum):
     HAPI_INPUT_GEOMETRY = 1
     HAPI_INPUT_MAX = 2
 
+class HAPI_PartInfo(StructureWithEnums): 
+    _fields_ = [('id', c_int32),  
+                ('nameSH', c_int32),
+                ('type', c_int32),
+                ('faceCount', c_int32),
+                ('vertexCount', c_int32),
+                ('pointCount', c_int32),
+                ('attributeCounts', c_int32 * 4),
+                ('isInstanced', c_bool),
+                ('instancedPartCount', c_int32),
+                ('instanceCount', c_int32),
+                ('hasChanged', c_bool)]
+    _map = {
+         "type":  HAPI_PartType
+    }
+
+    def __init__(self):
+        self.attributeCounts[0] = 0
+        self.attributeCounts[1] = 0
+        self.attributeCounts[2] = 0
+        self.attributeCounts[3] = 0
+
+    @property
+    def pointAttribCount(self): 
+        return self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_POINT] 
+       
+    @pointAttribCount.setter 
+    def pointAttribCount(self, v):  
+        self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_POINT]  = v 
+
+    @property
+    def vertexAttribCount(self): 
+        return self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_VERTEX] 
+       
+    @vertexAttribCount.setter 
+    def vertexAttribCount(self, v):  
+        self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_VERTEX]  = v 
+
+    @property
+    def primAttribCount(self): 
+        return self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_PRIM] 
+       
+    @primAttribCount.setter 
+    def primAttribCount(self, v):  
+        self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_PRIM]  = v 
+
+    @property
+    def detailAttribCount(self): 
+        return self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_DETAIL] 
+       
+    @detailAttribCount.setter 
+    def detailAttribCount(self, v):  
+        self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_DETAIL]  = v 
+
+class HAPI_AttributeInfo(StructureWithEnums): 
+    _fields_ = [('exists', c_bool),  
+                ('owner', c_int32),
+                ('storage', c_int32),
+                ('originalOwner', c_int32),
+                ('count', c_int32),
+                ('tupleSize', c_int32),
+                ('typeInfo', c_int32)]
+    _map = {
+         "owner":  HAPI_AttributeOwner,
+         "storage":  HAPI_StorageType,
+         "originalOwner":  HAPI_AttributeOwner,
+         "typeInfo":  HAPI_AttributeTypeInfo
+    }
+
 class SessionConnectionState(enum.IntEnum):
     NOT_CONNECTED = 0
     CONNECTED = 1

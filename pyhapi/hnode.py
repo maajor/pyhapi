@@ -76,5 +76,22 @@ class HNode():
         await HAPI.WaitCookAsync(self.HAPISession, 5.0)
         HAPI.SetParmIntValue(self.HAPISession, self.NodeId.value, param_name, 0)
 
+    def ConnectNodeInput(node_id_to_connect, input_index = 0, output_index = 0):
+        pass
+
+    def SetGeometry(self, geo):
+        pass
+
     def __del__(self):
         HAPI.DeleteNode(self.HAPISession, self.NodeId)
+
+
+
+class HInputNode(HNode):
+
+    def __init__(self, session, node_name):
+        self.Session = session
+        self.HAPISession = session.HAPISession
+        self.Instantiated = False
+        self.NodeId = HAPI.CreateInputNode(self.HAPISession, node_name)
+        self.Instantiated = True
