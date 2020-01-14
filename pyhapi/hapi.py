@@ -281,9 +281,9 @@ def CreateNode(
         Description
     '''
     nodeid = c_int32()
-    result =  HAPIlib.HAPI_CreateNode( byref(session), c_int(parent_node_id), c_char_p(operator_name),  c_char_p(node_label.encode('utf-8')), c_bool(cook_on_creation),  byref(nodeid) ) 
+    result =  HAPIlib.HAPI_CreateNode( byref(session), c_int(parent_node_id), c_char_p(operator_name.encode('utf-8')),  c_char_p(node_label.encode('utf-8')), c_bool(cook_on_creation),  byref(nodeid) ) 
     assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "CreateNode Failed with {0}".format(HAPI_Result(result).name)
-    return nodeid
+    return nodeid.value
 
 def DeleteNode(session, node_id):
     '''
@@ -393,7 +393,18 @@ async def WaitCook(session, statusReportInterval = 1):
     print("-------------Finish Cooking!---------------")
     assert cookResult == HAPI_Result.HAPI_RESULT_SUCCESS and cookStatus.value == HAPI_State.HAPI_STATE_READY, "CookNode Failed with {0} and Cook Status is {1}".format(HAPI_Result(cookResult).name, HAPI_State(cookStatus.value).name)
 
-def ComposeChildNodeList(session, nodeid):
+def ConnectNodeInput(session, node_id, node_id_to_connect, input_index = 0, output_index = 0):
+    result = HAPIlib.HAPI_ConnectNodeInput( byref(session), c_int(node_id), c_int(input_index), c_int(node_id_to_connect), c_int(output_index))
+    assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "ConnectNodeInput Failed with {0}".format(HAPI_Result(result).name)
+    return
+
+def GetComposedChildNodeList(session, nodeid, count):
+    id_buffer = ( c_int32 * count) ()
+    result = HAPIlib.HAPI_GetComposedChildNodeList( byref(session), nodeid, byref(id_buffer), c_int(count))
+    assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "GetComposedChildNodeList Failed with {0}".format(HAPI_Result(result).name)
+    return id_buffer
+
+def ComposeChildNodeList(session, nodeid, node_type = HAPI_NodeFlags.HAPI_NODEFLAGS_ANY, node_flag = HAPI_NodeFlags.HAPI_NODEFLAGS_ANY):
     '''
     Attributes
     ----------
@@ -413,9 +424,9 @@ def ComposeChildNodeList(session, nodeid):
         Description
     '''
     childCount = c_int32()
-    result = HAPIlib.HAPI_ComposeChildNodeList( byref(session), nodeid, c_int(-1), c_int(-1), c_bool(False), byref(childCount))
+    result = HAPIlib.HAPI_ComposeChildNodeList( byref(session), nodeid, c_int(node_type), c_int(node_flag), c_bool(False), byref(childCount))
     assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "ComposeChildNodeList Failed with {0}".format(HAPI_Result(result).name)
-    return childCount
+    return childCount.value
 
 def GetNodeInfo(session, nodeid):
     """Summary
@@ -529,7 +540,7 @@ def GetParamStringValue(session, nodeid, parmname, tupleid = 0):
     stringsh = c_int32()
     result = HAPIlib.HAPI_GetParmStringValue(byref(session), nodeid, c_char_p(parmname.encode('utf-8')), tupleid, True, byref(stringsh))
     assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "GetParamStringValue Failed with {0}".format(HAPI_Result(result).name)
-    return GetString(session, stringsh).decode()
+    return GetString(session, stringsh)
 
 def SetParmIntValue(session, nodeid, parmname, value, tupleid = 0):
     """Summary
@@ -951,7 +962,7 @@ def GetString(session, string_handle):
     buffers = create_string_buffer(bufferLength.value)
     _GetString ( session, string_handle, buffers, bufferLength );
 
-    return buffers.value;
+    return buffers.value.decode();
 
 def _GetStatusString(session, status = HAPI_StatusType.HAPI_STATUS_COOK_RESULT, verbosity = HAPI_StatusVerbosity.HAPI_STATUSVERBOSITY_ERRORS):
     """Summary

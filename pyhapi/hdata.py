@@ -1,5 +1,4 @@
 from . import *
-import numpy as np
 
 #https://gist.github.com/christoph2/9c390e5c094796903097
 class StructureWithEnums(Structure):

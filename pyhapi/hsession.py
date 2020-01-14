@@ -18,6 +18,7 @@ class HSession():
         """
         self.HAPISession = HAPI_Session(HAPI_SessionType.HAPI_SESSION_THRIFT, 0)
         self.ConnectedState = SessionConnectionState.NOT_CONNECTED
+        self.Nodes = {}
 
     def CreateThriftPipeSession(self, rootpath, pipeName = "hapi", autoClose = True, timeout = 10000.0):
         """Summary

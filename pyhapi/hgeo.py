@@ -1,6 +1,5 @@
 """Summary
 """
-import numpy as np
 from . import *
 
 class HGeo():
@@ -157,7 +156,6 @@ class HGeoMesh(HGeo):
 
         for attribInfo, name, data in self.Attribs:
             HAPI.AddAttribute(session.HAPISession, node_id, name, attribInfo)
-            print(HAPI.StorageTypeToSetAttrib[attribInfo.storage])
             HAPI.StorageTypeToSetAttrib[attribInfo.storage](session.HAPISession, node_id, name, attribInfo, data)
 
         HAPI.SetVertexList(session.HAPISession, node_id, self.Faces)
