@@ -10,6 +10,6 @@ import pyhapi.hapi as HAPI
 from .hsession import HSession, HSessionManager
 from .hnode import HNode, HInputNode
 from .hasset import HAsset
-from .hgeo import HGeo, HGeoMesh
+from .hgeo import HGeo, HGeoMesh, HGeoCurve
 
 __version__ = "0.0.1"

@@ -411,6 +411,19 @@ class HAPI_PartInfo(StructureWithEnums):
     def detailAttribCount(self, v):  
         self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_DETAIL]  = v 
 
+class HAPI_CurveInfo(StructureWithEnums): 
+    _fields_ = [('curveType', c_int32),  
+                ('curveCount', c_int32),
+                ('vertexCount', c_int32),
+                ('knotCount', c_int32),
+                ('isPeriodic', c_bool),
+                ('isRational', c_bool),
+                ('order', c_int32),
+                ('hasKnots', c_bool)]
+    _map = {
+        "curveType":  HAPI_CurveType
+    }
+
 class HAPI_AttributeInfo(StructureWithEnums): 
     _fields_ = [('exists', c_bool),
                 ('owner', c_int32),

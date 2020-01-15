@@ -1,6 +1,7 @@
 """Summary
 """
 from . import *
+from .hnode import HExistingNode
 
 class HSession():
 
@@ -19,6 +20,17 @@ class HSession():
         self.HAPISession = HAPI_Session(HAPI_SessionType.HAPI_SESSION_THRIFT, 0)
         self.ConnectedState = SessionConnectionState.NOT_CONNECTED
         self.Nodes = {}
+
+    def GetNode(self, node_id):
+        try_get_node = self.Nodes.get(node_id)
+        if try_get_node != None:
+            return try_get_node
+        else:
+            existing_node = HExistingNode(self, node_id)
+            if existing_node != None:
+                self.Nodes[node_id] = existing_node
+                return existing_node
+        return None
 
     def CreateThriftPipeSession(self, rootpath, pipeName = "hapi", autoClose = True, timeout = 10000.0):
         """Summary
@@ -117,6 +129,10 @@ class HSession():
         """
         HAPI.SaveHIPFile(self.HAPISession, filename)
         print("Session saved to {0}".format(filename))
+
+    def __del__(self):
+        
+        self.CheckAndCloseExistingSession()
 
 class HSessionManager():
 

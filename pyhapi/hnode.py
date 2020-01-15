@@ -16,7 +16,7 @@ class HNode():
         Session (TYPE): Description
     """
     
-    def __init__(self, session, operator_name, node_name, cook_on_creation = False):
+    def __init__(self, session, operator_name, node_name, parent_node = None, cook_on_creation = False):
         """Summary
         
         Args:
@@ -27,7 +27,11 @@ class HNode():
         self.Session      = session
         self.HAPISession  = session.HAPISession
         self.Instantiated = False
-        self.NodeId       = HAPI.CreateNode(self.HAPISession, operator_name, node_name, cook_on_creation = cook_on_creation)
+        self.NodeId       = HAPI.CreateNode(self.HAPISession,
+            operator_name, 
+            node_name, 
+            parent_node_id = parent_node.NodeId if parent_node != None else -1, 
+            cook_on_creation = cook_on_creation)
         self.Instantiated = True
         self.Session.Nodes[self.NodeId] = self
         self.Name = node_name
@@ -103,6 +107,7 @@ class HNode():
         if not self.IsInited():
             return
         HAPI.CookNode(self.HAPISession, self.Session.CookOption, self.NodeId)
+        return self
 
     async def CookAsync(self):
         """Summary
@@ -157,20 +162,36 @@ class HNode():
             output_index (int, optional): Description
         """
         HAPI.ConnectNodeInput(self.HAPISession, self.NodeId, node_to_connect.NodeId, input_index, output_index)
+        return self
+
+    def DisconnectNodeInput(self, node_to_connect, input_index = 0):
+        """Summary
+        
+        Args:
+            node_to_connect (HNode): Description
+            input_index (int, optional): Description
+            output_index (int, optional): Description
+        """
+        HAPI.DisconnectNodeInput(self.HAPISession, self.NodeId, input_index)
+        return self
+
+    def GetNodeInput(self, input_index = 0):
+        input_node_id = HAPI.QueryNodeInput(self.HAPISession, self.NodeId, input_index)
+        return self.Session.GetNode(input_node_id)
 
     def GetChildNodes(self):
         child_count = HAPI.ComposeChildNodeList(self.HAPISession, self.NodeId)
         child_nodes = HAPI.GetComposedChildNodeList(self.HAPISession, self.NodeId, child_count)
-        child_hnodes = []
+        '''child_hnodes = []
         for node_id in child_nodes:
             try_get_node = self.Session.Nodes.get(node_id)
             if try_get_node != None:
                 child_hnodes.append(try_get_node)
             else:
                 existing_node = HExistingNode(self.Session, node_id)
-                child_hnodes.append(existing_node)
+                child_hnodes.append(existing_node)'''
 
-        return child_hnodes
+        return [self.Session.GetNode(node_id) for node_id in child_nodes]
 
     def SetGeometry(self, geo):
         """Summary
@@ -180,13 +201,14 @@ class HNode():
         """
         geo.CommitToNode(self.Session, self.NodeId)
 
-    def __del__(self):
+    def Delete(self):
         """Summary
         """
         try:
             HAPI.DeleteNode(self.HAPISession, self.NodeId)
+            self.Instantiated = False
         except Exception as e:
-            pass
+            print(e)
 
 
 
@@ -222,9 +244,13 @@ class HExistingNode(HNode):
         self.Session                    = session
         self.HAPISession                = session.HAPISession
         self.NodeId                     = node_id
-        self.Instantiated               = True
-        self.Session.Nodes[self.NodeId] = self
 
-        self.NodeInfo                   = HAPI.GetNodeInfo(self.HAPISession, self.NodeId);
-        self.Name                       = HAPI.GetString(self.HAPISession, self.NodeInfo.nameSH)
+        try:
+            self.NodeInfo                   = HAPI.GetNodeInfo(self.HAPISession, self.NodeId);
+            self.Name                       = HAPI.GetString(self.HAPISession, self.NodeInfo.nameSH)
+            self.Instantiated               = True
+        except Exception as e:
+            self.Instantiated               = False
+
+        return
 

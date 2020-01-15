@@ -245,7 +245,7 @@ def CreateInputNode(session, node_label):
     nodeid = c_int32()
     result =  HAPIlib.HAPI_CreateInputNode( byref(session), byref(nodeid), c_char_p(node_label.encode('utf-8'))) 
     assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "CreateInputNode Failed with {0}".format(HAPI_Result(result).name)
-    return nodeid
+    return nodeid.value
 
 def CreateNode(
     session, 
@@ -337,7 +337,6 @@ def CookNode(
     result =  HAPIlib.HAPI_CookNode(byref(session), nodeid, byref(cook_option))
     loop = asyncio.get_event_loop()
     loop.run_until_complete(WaitCook(session))
-    loop.close()
 
 async def CookNodeAsync(
     session, 
@@ -393,10 +392,20 @@ async def WaitCook(session, statusReportInterval = 1):
     print("-------------Finish Cooking!---------------")
     assert cookResult == HAPI_Result.HAPI_RESULT_SUCCESS and cookStatus.value == HAPI_State.HAPI_STATE_READY, "CookNode Failed with {0} and Cook Status is {1}".format(HAPI_Result(cookResult).name, HAPI_State(cookStatus.value).name)
 
+def QueryNodeInput(session, node_id, input_index = 0):
+    connect_node_id = c_int32()
+    result = HAPIlib.HAPI_QueryNodeInput( byref(session), c_int(node_id), c_int(input_index), byref(connect_node_id))
+    assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "QueryNodeInput Failed with {0}".format(HAPI_Result(result).name)
+    return connect_node_id.value
+
 def ConnectNodeInput(session, node_id, node_id_to_connect, input_index = 0, output_index = 0):
     result = HAPIlib.HAPI_ConnectNodeInput( byref(session), c_int(node_id), c_int(input_index), c_int(node_id_to_connect), c_int(output_index))
     assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "ConnectNodeInput Failed with {0}".format(HAPI_Result(result).name)
     return
+
+def DisconnectNodeInput(session, node_id, input_index = 0):
+    result = HAPIlib.HAPI_DisconnectNodeInput( byref(session), c_int(node_id), c_int(input_index))
+    assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "DisconnectNodeInput Failed with {0}".format(HAPI_Result(result).name)
 
 def GetComposedChildNodeList(session, nodeid, count):
     id_buffer = ( c_int32 * count) ()
@@ -636,6 +645,25 @@ def SetPartInfo(session, node_id, part_info):
     """
     result = HAPIlib.HAPI_SetPartInfo(byref(session), node_id, 0, byref(part_info))
     assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "SetPartInfo Failed with {0}".format(HAPI_Result(result).name)
+    return
+
+def SetCurveInfo(session, node_id, curve_info):
+    result = HAPIlib.HAPI_SetCurveInfo(byref(session), node_id, 0, byref(curve_info))
+    assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "SetCurveInfo Failed with {0}".format(HAPI_Result(result).name)
+    return
+
+def SetCurveCounts(session, node_id, part_id, curve_count):
+    intp = POINTER(c_int)
+    result = HAPIlib.HAPI_SetCurveCounts(byref(session), node_id, part_id, curve_count.flatten().ctypes.data_as(intp), 0, curve_count.shape[0])
+    assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "SetCurveCounts Failed with {0}".format(HAPI_Result(result).name)
+    return
+
+def SetCurveKnots(session, node_id, part_id, curve_knots):
+    if type(curve_knots) == type(None):
+        return
+    intp = POINTER(c_int)
+    result = HAPIlib.HAPI_SetCurveKnots(byref(session), node_id, part_id, curve_knots.flatten().ctypes.data_as(intp), 0, curve_knots.shape[0])
+    assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "SetCurveKnots Failed with {0}".format(HAPI_Result(result).name)
     return
 
 def AddAttribute(session, node_id, name, attrib_info):

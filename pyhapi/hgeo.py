@@ -112,7 +112,12 @@ class HGeo():
             session (TYPE): Description
             node_id (TYPE): Description
         """
-        pass
+        
+        HAPI.SetPartInfo(session.HAPISession, node_id, self.PartInfo)
+
+        for attribInfo, name, data in self.Attribs:
+            HAPI.AddAttribute(session.HAPISession, node_id, name, attribInfo)
+            HAPI.StorageTypeToSetAttrib[attribInfo.storage](session.HAPISession, node_id, name, attribInfo, data)
 
 class HGeoMesh(HGeo):
 
@@ -152,14 +157,56 @@ class HGeoMesh(HGeo):
             session (TYPE): Description
             node_id (TYPE): Description
         """
-        HAPI.SetPartInfo(session.HAPISession, node_id, self.PartInfo)
-
-        for attribInfo, name, data in self.Attribs:
-            HAPI.AddAttribute(session.HAPISession, node_id, name, attribInfo)
-            HAPI.StorageTypeToSetAttrib[attribInfo.storage](session.HAPISession, node_id, name, attribInfo, data)
+        super().CommitToNode(session, node_id)
 
         HAPI.SetVertexList(session.HAPISession, node_id, self.Faces)
+        #Todo: what if each face's vertex count not same
         HAPI.SetFaceCounts(session.HAPISession, node_id, np.repeat(self.Faces.shape[1], self.Faces.shape[0]))
         HAPI.CommitGeo(session.HAPISession, node_id)
 
+class HGeoCurve(HGeo):
+
+    def __init__(self, vertices, curve_knots = None, has_knot = False, is_periodic = False, order = 4, curve_type = HAPI_CurveType.HAPI_CURVETYPE_LINEAR):
+        """Summary
         
+        Args:
+            vertices (TYPE): Description
+            faces (TYPE): Description
+        """
+        super(HGeoCurve, self).__init__()
+        self.PointCount           = vertices.shape[0]
+        self.VertexCount          = vertices.shape[0]
+        self.FaceCount            = 1
+        self.CurveKnots           = curve_knots
+        self.CurveCount           = np.repeat(vertices.shape[0], 1)
+
+        self.PartInfo.type        = HAPI_PartType.HAPI_PARTTYPE_CURVE
+        self.PartInfo.faceCount   = self.FaceCount
+        self.PartInfo.vertexCount = self.VertexCount
+        self.PartInfo.pointCount  = self.PointCount
+
+        self.CurveInfo = HAPI_CurveInfo()
+        self.CurveInfo.curveType = curve_type
+        self.CurveInfo.curveCount = 1
+        self.CurveInfo.vertexCount = vertices.shape[0]
+        self.CurveInfo.knotCount = (0 if type(curve_knots) == type(None) else curve_knots.shape[0])
+        self.CurveInfo.isPeriodic = is_periodic
+        self.CurveInfo.order = order
+        self.CurveInfo.hasKnots = has_knot
+
+        self.AddPointAttrib("P", vertices)
+
+    def CommitToNode(self, session, node_id):
+        """Summary
+        
+        Args:
+            session (TYPE): Description
+            node_id (TYPE): Description
+        """
+        super().CommitToNode(session, node_id)
+
+        HAPI.SetCurveInfo(session.HAPISession, node_id, self.CurveInfo)
+        HAPI.SetCurveCounts(session.HAPISession, node_id, self.PartInfo.id, self.CurveCount)
+        HAPI.SetCurveKnots(session.HAPISession, node_id, self.PartInfo.id, self.CurveKnots)
+
+        HAPI.CommitGeo(session.HAPISession, node_id)
