@@ -21,7 +21,17 @@ class HGeo():
         self.PointCount  = 0
         self.VertexCount = 0
         self.FaceCount   = 0
-        self.Attribs     = []
+        self.DetailCount = 1
+        self.Attribs     = {}
+
+        self.TypeToAddAttrib = {
+            AttributeType.VERTEX:self.AddVertexAttrib,
+            AttributeType.POINT:self.AddPointAttrib,
+            AttributeType.PRIM:self.AddPrimAttrib,
+            AttributeType.DETAIL:self.AddDetailAttrib}
+
+    def AddAttrib(self, attrib_type, name, data):
+        self.TypeToAddAttrib[attrib_type](name, data)
 
     def AddPointAttrib(self, name, data):
         """Summary
@@ -45,7 +55,8 @@ class HGeo():
         attribInfo.owner                 = HAPI_AttributeOwner.HAPI_ATTROWNER_POINT
         self.PartInfo.pointAttribCount  += 1
 
-        self.Attribs.append((attribInfo, name, data))
+        #self.Attribs.append((attribInfo, name, data))
+        self.Attribs[(HAPI_AttributeOwner.HAPI_ATTROWNER_POINT, name)] = (attribInfo, name, data)
 
 
     def AddVertexAttrib(self, name, data):
@@ -70,7 +81,8 @@ class HGeo():
         attribInfo.owner                  = HAPI_AttributeOwner.HAPI_ATTROWNER_VERTEX
         self.PartInfo.vertexAttribCount  += 1
 
-        self.Attribs.append((attribInfo, name, data))
+        #self.Attribs.append((attribInfo, name, data))
+        self.Attribs[(HAPI_AttributeOwner.HAPI_ATTROWNER_VERTEX, name)] = (attribInfo, name, data)
 
     def AddPrimAttrib(self, name, data):
         """Summary
@@ -94,7 +106,8 @@ class HGeo():
         attribInfo.owner                = HAPI_AttributeOwner.HAPI_ATTROWNER_PRIM
         self.PartInfo.primAttribCount  += 1
 
-        self.Attribs.append((attribInfo, name, data))
+        #self.Attribs.append((attribInfo, name, data))
+        self.Attribs[(HAPI_AttributeOwner.HAPI_ATTROWNER_PRIM, name)] = (attribInfo, name, data)
 
     def AddDetailAttrib(self, name, data):
         """Summary
@@ -104,6 +117,16 @@ class HGeo():
             data (TYPE): Description
         """
         pass
+
+    def GetAttribData(self, attrib_type, name):
+        _, _, data = self.Attribs[(attrib_type, name)]
+        return data
+
+    def GetAttribNames(self):
+        attrib_names = []
+        for attrib_type, name in self.Attribs.keys():
+            attrib_names.append([name, AttributeType(attrib_type)])
+        return attrib_names
 
     def CommitToNode(self, session, node_id):
         """Summary
@@ -115,7 +138,7 @@ class HGeo():
         
         HAPI.SetPartInfo(session.HAPISession, node_id, self.PartInfo)
 
-        for attribInfo, name, data in self.Attribs:
+        for attribInfo, name, data in self.Attribs.values():
             HAPI.AddAttribute(session.HAPISession, node_id, name, attribInfo)
             HAPI.StorageTypeToSetAttrib[attribInfo.storage](session.HAPISession, node_id, name, attribInfo, data)
 
@@ -130,7 +153,7 @@ class HGeoMesh(HGeo):
         VertexCount (TYPE): Description
     """
     
-    def __init__(self, vertices, faces):
+    def __init__(self, vertices = None, faces = None):
         """Summary
         
         Args:
@@ -138,17 +161,34 @@ class HGeoMesh(HGeo):
             faces (TYPE): Description
         """
         super(HGeoMesh, self).__init__()
-        self.PointCount           = vertices.shape[0]
-        self.VertexCount          = faces.flatten().shape[0]
-        self.FaceCount            = faces.shape[0]
-        self.Faces                = faces
+        if type(vertices) != type(None) and type(faces) != type(None):
+            self.PointCount           = vertices.shape[0]
+            self.VertexCount          = faces.flatten().shape[0]
+            self.FaceCount            = faces.shape[0]
+            self.Faces                = faces
 
-        self.PartInfo.type        = HAPI_PartType.HAPI_PARTTYPE_MESH
-        self.PartInfo.faceCount   = self.FaceCount
-        self.PartInfo.vertexCount = self.VertexCount
-        self.PartInfo.pointCount  = self.PointCount
+            self.PartInfo.type        = HAPI_PartType.HAPI_PARTTYPE_MESH
+            self.PartInfo.faceCount   = self.FaceCount
+            self.PartInfo.vertexCount = self.VertexCount
+            self.PartInfo.pointCount  = self.PointCount
 
-        self.AddPointAttrib("P", vertices)
+            self.AddAttrib(AttributeType.POINT, "P", vertices)
+
+    def ExtractFromSop(self, session, node_id, part_id):
+        self.PartInfo = HAPI.GetPartInfo(session.HAPISession, node_id, part_id)
+        for attrib_type in range(0, HAPI_AttributeOwner.HAPI_ATTROWNER_MAX):
+            attrib_names = HAPI.GetAttributeNames(
+                session.HAPISession, 
+                node_id, 
+                self.PartInfo,
+                attrib_type)
+            for attrib_name in attrib_names:
+                #do not extract private data
+                if not attrib_name.startswith("__"):
+                    attrib_info = HAPI.GetAttributeInfo(session.HAPISession, node_id, part_id,attrib_name,attrib_type)
+                    data = HAPI.StorageTypeToGetAttrib[attrib_info.storage](session.HAPISession, node_id, part_id, attrib_name, attrib_info)
+                    self.Attribs[(attrib_type, attrib_name)] = (attrib_info, attrib_name, data)
+
 
     def CommitToNode(self, session, node_id):
         """Summary
@@ -194,7 +234,8 @@ class HGeoCurve(HGeo):
         self.CurveInfo.order = order
         self.CurveInfo.hasKnots = has_knot
 
-        self.AddPointAttrib("P", vertices)
+        #self.AddPointAttrib("P", vertices)
+        self.AddAttrib(AttributeType.POINT, "P", vertices)
 
     def CommitToNode(self, session, node_id):
         """Summary

@@ -98,6 +98,19 @@ class HNode():
         elif paraminfo.isString():
             return HAPI.SetParamStringValue(self.HAPISession, self.NodeId, paramid, value)
 
+    def GetDisplayGeos(self):
+        all_geos = []
+        asset_info = HAPI.GetAssetInfo(self.HAPISession, self.NodeId)
+        child_sop_count = HAPI.ComposeObjectList(self.HAPISession, self.NodeId)
+        child_object_infos = HAPI.GetComposedObjectList(self.HAPISession, self.NodeId, child_sop_count)
+        for objectinfo in child_object_infos:
+            geo_info = HAPI.GetDisplayGeoInfo(self.HAPISession, objectinfo.nodeId)
+            for part_id in range(0, geo_info.partCount):
+                extract_mesh = HGeoMesh()
+                extract_mesh.ExtractFromSop(self.Session, geo_info.nodeId, part_id)
+                all_geos.append(extract_mesh)
+        return all_geos
+
     def Cook(self):
         """Summary
         

@@ -26,8 +26,8 @@ class StructureWithEnums(Structure):
             if attr in self._map:
                 attrType = self._map[attr]
             value = getattr(self, attr)
-            result.append("    {0} [{1}] = {2!r};".format(attr, attrType.__name__, value))
-        result.append("};")
+            result.append("    {0} [{1}] = {2!r}".format(attr, attrType.__name__, value))
+        result.append("}")
         return '\n'.join(result)
 
     __repr__ = __str__
@@ -285,6 +285,15 @@ class HAPI_AttributeOwner(enum.IntEnum):
     HAPI_ATTROWNER_DETAIL                               = 3
     HAPI_ATTROWNER_MAX                                  = 4
 
+#User-friendly Alias for HAPI_AttributeOwner
+class AttributeType(enum.IntEnum):
+    INVALID                                             = -1
+    VERTEX                                              = 0
+    POINT                                               = 1
+    PRIM                                                = 2
+    DETAIL                                              = 3
+    MAX                                                 = 4
+
 class HAPI_CurveType(enum.IntEnum):
     HAPI_CURVETYPE_INVALID                              = -1
     HAPI_CURVETYPE_LINEAR                               = 0
@@ -424,6 +433,7 @@ class HAPI_CurveInfo(StructureWithEnums):
         "curveType":  HAPI_CurveType
     }
 
+
 class HAPI_AttributeInfo(StructureWithEnums): 
     _fields_ = [('exists', c_bool),
                 ('owner', c_int32),
@@ -453,6 +463,53 @@ class HAPI_Session(StructureWithEnums):
                 ('id', c_int64)]
     _map = {
          "type":  HAPI_SessionType
+    }
+
+class HAPI_AssetInfo(Structure):  
+    _fields_ = [('nodeId', c_int32),  
+                ('objectNodeId', c_int32),  
+                ('hasEverCooked', c_bool),  
+                ('nameSH', c_int32),  
+                ('labelSH', c_int32),  
+                ('filePathSH ', c_int32),  
+                ('versionSH', c_int32),  
+                ('fullOpNameSH', c_int32),  
+                ('helpTextSH', c_int32),  
+                ('helpURLSH', c_int32),  
+                ('objectCount', c_int32),  
+                ('handleCount', c_int32),  
+                ('transformInputCount', c_int32),  
+                ('geoInputCount', c_int32),  
+                ('geoOutputCount', c_int32),  
+                ('haveObjectsChanged', c_int32),  
+                ('haveMaterialsChanged', c_int32)]  
+
+class HAPI_ObjectInfo(Structure):  
+    _fields_ = [('nameSH', c_int32),  
+                ('objectInstancePathSH', c_int32),  
+                ('hasTransformChanged', c_bool),  
+                ('haveGeosChanged', c_bool),  
+                ('isVisible', c_bool),  
+                ('isInstancer ', c_bool),  
+                ('isInstanced', c_bool),  
+                ('geoCount', c_int32),  
+                ('nodeId', c_int32),  
+                ('objectToInstanceId', c_int32)]  
+
+class HAPI_GeoInfo(StructureWithEnums):  
+    _fields_ = [('type', c_int32),  
+                ('nameSH', c_int32),
+                ('nodeId', c_int32),
+                ('isEditable', c_bool),
+                ('isTemplated', c_bool),
+                ('isDisplayGeo', c_bool),
+                ('hasGeoChanged', c_bool),
+                ('hasMaterialChanged', c_bool),
+                ('pointGroupCount', c_int32),
+                ('primitiveGroupCount', c_int32),
+                ('partCount', c_int32)]
+    _map = {
+         "type":  HAPI_GeoType 
     }
 
 class HAPI_CookOptions(Structure):  

@@ -7,9 +7,9 @@ from ctypes import cdll, Structure, Array, POINTER, c_int, c_int32, c_int64, c_f
 HAPIlib = cdll.LoadLibrary("libHAPIL")
 from .hdata import *
 import pyhapi.hapi as HAPI
+from .hgeo import HGeo, HGeoMesh, HGeoCurve
 from .hsession import HSession, HSessionManager
 from .hnode import HNode, HInputNode
 from .hasset import HAsset
-from .hgeo import HGeo, HGeoMesh, HGeoCurve
 
 __version__ = "0.0.1"

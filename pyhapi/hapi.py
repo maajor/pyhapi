@@ -6,6 +6,7 @@ StorageTypeToSetAttrib : TYPE
     Description
 """
 from . import *
+import numpy as np
 
 def IsSessionValid(session):
     """Summary
@@ -242,10 +243,10 @@ def CreateInputNode(session, node_label):
     TYPE
         Description
     """
-    nodeid = c_int32()
-    result =  HAPIlib.HAPI_CreateInputNode( byref(session), byref(nodeid), c_char_p(node_label.encode('utf-8'))) 
+    node_id = c_int32()
+    result =  HAPIlib.HAPI_CreateInputNode( byref(session), byref(node_id), c_char_p(node_label.encode('utf-8'))) 
     assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "CreateInputNode Failed with {0}".format(HAPI_Result(result).name)
-    return nodeid.value
+    return node_id.value
 
 def CreateNode(
     session, 
@@ -280,10 +281,10 @@ def CreateNode(
     cook_on_creation : bool, optional
         Description
     '''
-    nodeid = c_int32()
-    result =  HAPIlib.HAPI_CreateNode( byref(session), c_int(parent_node_id), c_char_p(operator_name.encode('utf-8')),  c_char_p(node_label.encode('utf-8')), c_bool(cook_on_creation),  byref(nodeid) ) 
+    node_id = c_int32()
+    result =  HAPIlib.HAPI_CreateNode( byref(session), c_int(parent_node_id), c_char_p(operator_name.encode('utf-8')),  c_char_p(node_label.encode('utf-8')), c_bool(cook_on_creation),  byref(node_id) ) 
     assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "CreateNode Failed with {0}".format(HAPI_Result(result).name)
-    return nodeid.value
+    return node_id.value
 
 def DeleteNode(session, node_id):
     '''
@@ -312,14 +313,14 @@ def DeleteNode(session, node_id):
 def CookNode(
     session, 
     cook_option, 
-    nodeid
+    node_id
     ):
     '''
     Attributes
     ----------
     session : HAPI_Session
     cook_option: HAPI_CookOptions
-    nodeid : int 
+    node_id : int 
     
     Parameters
     ----------
@@ -327,28 +328,28 @@ def CookNode(
         Description
     cook_option : TYPE
         Description
-    nodeid : TYPE
+    node_id : TYPE
         Description
     
     No Longer Returned
     ------------------
     int: node id if success
     '''
-    result =  HAPIlib.HAPI_CookNode(byref(session), nodeid, byref(cook_option))
+    result =  HAPIlib.HAPI_CookNode(byref(session), node_id, byref(cook_option))
     loop = asyncio.get_event_loop()
     loop.run_until_complete(WaitCook(session))
 
 async def CookNodeAsync(
     session, 
     cook_option, 
-    nodeid
+    node_id
     ):
     '''
     Attributes
     ----------
     session : HAPI_Session
     cook_option: HAPI_CookOptions
-    nodeid : int 
+    node_id : int 
     
     Parameters
     ----------
@@ -356,14 +357,14 @@ async def CookNodeAsync(
         Description
     cook_option : TYPE
         Description
-    nodeid : TYPE
+    node_id : TYPE
         Description
     
     No Longer Returned
     ------------------
     int: node id if success
     '''
-    result =  HAPIlib.HAPI_CookNode(byref(session), nodeid, byref(cook_option))
+    result =  HAPIlib.HAPI_CookNode(byref(session), node_id, byref(cook_option))
     await WaitCook(session)
 
 async def WaitCook(session, statusReportInterval = 1):
@@ -407,24 +408,24 @@ def DisconnectNodeInput(session, node_id, input_index = 0):
     result = HAPIlib.HAPI_DisconnectNodeInput( byref(session), c_int(node_id), c_int(input_index))
     assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "DisconnectNodeInput Failed with {0}".format(HAPI_Result(result).name)
 
-def GetComposedChildNodeList(session, nodeid, count):
+def GetComposedChildNodeList(session, node_id, count):
     id_buffer = ( c_int32 * count) ()
-    result = HAPIlib.HAPI_GetComposedChildNodeList( byref(session), nodeid, byref(id_buffer), c_int(count))
+    result = HAPIlib.HAPI_GetComposedChildNodeList( byref(session), node_id, byref(id_buffer), c_int(count))
     assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "GetComposedChildNodeList Failed with {0}".format(HAPI_Result(result).name)
     return id_buffer
 
-def ComposeChildNodeList(session, nodeid, node_type = HAPI_NodeFlags.HAPI_NODEFLAGS_ANY, node_flag = HAPI_NodeFlags.HAPI_NODEFLAGS_ANY):
+def ComposeChildNodeList(session, node_id, node_type = HAPI_NodeFlags.HAPI_NODEFLAGS_ANY, node_flag = HAPI_NodeFlags.HAPI_NODEFLAGS_ANY):
     '''
     Attributes
     ----------
     session : HAPI_Session
-    nodeid : int
+    node_id : int
     
     Parameters
     ----------
     session : TYPE
         Description
-    nodeid : TYPE
+    node_id : TYPE
         Description
     
     Returns
@@ -433,18 +434,72 @@ def ComposeChildNodeList(session, nodeid, node_type = HAPI_NodeFlags.HAPI_NODEFL
         Description
     '''
     childCount = c_int32()
-    result = HAPIlib.HAPI_ComposeChildNodeList( byref(session), nodeid, c_int(node_type), c_int(node_flag), c_bool(False), byref(childCount))
+    result = HAPIlib.HAPI_ComposeChildNodeList( byref(session), node_id, c_int(node_type), c_int(node_flag), c_bool(False), byref(childCount))
     assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "ComposeChildNodeList Failed with {0}".format(HAPI_Result(result).name)
     return childCount.value
 
-def GetNodeInfo(session, nodeid):
+def GetDisplayGeoInfo(session, node_id):
+    geo_info = HAPI_GeoInfo()
+    result = HAPIlib.HAPI_GetDisplayGeoInfo( byref(session),
+        node_id, 
+        byref(geo_info))
+    assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "GetDisplayGeoInfo Failed with {0}".format(HAPI_Result(result).name)
+    return geo_info
+
+def GetPartInfo(session, node_id, part_id):
+    part_info = HAPI_PartInfo()
+    result = HAPIlib.HAPI_GetPartInfo( byref(session),
+        node_id, 
+        part_id,
+        byref(part_info))
+    assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "GetPartInfo Failed with {0}".format(HAPI_Result(result).name)
+    return part_info
+
+def GetComposedObjectList(session, node_id, count):
+    object_info_buffer = ( HAPI_ObjectInfo * count) ()
+    result = HAPIlib.HAPI_GetComposedObjectList( byref(session),
+        node_id, 
+        byref(object_info_buffer), 
+        c_int(0),
+        c_int(count))
+    assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "GetComposedObjectList Failed with {0}".format(HAPI_Result(result).name)
+    return object_info_buffer
+
+def ComposeObjectList(session, node_id):
+    '''
+    Attributes
+    ----------
+    session : HAPI_Session
+    node_id : int
+    
+    Parameters
+    ----------
+    session : TYPE
+        Description
+    node_id : TYPE
+        Description
+    
+    Returns
+    -------
+    TYPE
+        Description
+    '''
+    child_count = c_int32()
+    result = HAPIlib.HAPI_ComposeObjectList( byref(session), 
+        node_id, 
+        None,
+        byref(child_count))
+    assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "ComposeObjectList Failed with {0}".format(HAPI_Result(result).name)
+    return child_count.value
+
+def GetNodeInfo(session, node_id):
     """Summary
     
     Parameters
     ----------
     session : TYPE
         Description
-    nodeid : TYPE
+    node_id : TYPE
         Description
     
     Returns
@@ -453,18 +508,38 @@ def GetNodeInfo(session, nodeid):
         Description
     """
     node_info = HAPI_NodeInfo()
-    result = HAPIlib.HAPI_GetNodeInfo( byref(session), nodeid, byref(node_info));
+    result = HAPIlib.HAPI_GetNodeInfo( byref(session), node_id, byref(node_info));
     assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "GetNodeInfo Failed with {0}".format(HAPI_Result(result).name)
     return node_info
 
-def GetParameters(session, nodeid, node_info):
+def GetAssetInfo(session, node_id):
     """Summary
     
     Parameters
     ----------
     session : TYPE
         Description
-    nodeid : TYPE
+    node_id : TYPE
+        Description
+    
+    Returns
+    -------
+    TYPE
+        Description
+    """
+    asset_info = HAPI_AssetInfo()
+    result = HAPIlib.HAPI_GetAssetInfo( byref(session), c_int(node_id), byref(asset_info));
+    assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "GetAssetInfo Failed with {0}".format(HAPI_Result(result).name)
+    return asset_info
+
+def GetParameters(session, node_id, node_info):
+    """Summary
+    
+    Parameters
+    ----------
+    session : TYPE
+        Description
+    node_id : TYPE
         Description
     node_info : TYPE
         Description
@@ -475,18 +550,18 @@ def GetParameters(session, nodeid, node_info):
         Description
     """
     params = (HAPI_ParmInfo * node_info.parmCount)()
-    result = HAPIlib.HAPI_GetParameters(byref(session), nodeid,  byref(params), c_int32(0), c_int32(node_info.parmCount))
+    result = HAPIlib.HAPI_GetParameters(byref(session), node_id,  byref(params), c_int32(0), c_int32(node_info.parmCount))
     assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "GetParameters Failed with {0}".format(HAPI_Result(result).name)
     return params
 
-def GetParmIntValue(session, nodeid, parmname, tupleid = 0):
+def GetParmIntValue(session, node_id, parmname, tupleid = 0):
     """Summary
     
     Parameters
     ----------
     session : TYPE
         Description
-    nodeid : TYPE
+    node_id : TYPE
         Description
     parmname : TYPE
         Description
@@ -499,18 +574,18 @@ def GetParmIntValue(session, nodeid, parmname, tupleid = 0):
         Description
     """
     val = c_int32()
-    result = HAPIlib.HAPI_GetParmIntValue(byref(session), nodeid, c_char_p(parmname.encode('utf-8')), tupleid, byref(val))
+    result = HAPIlib.HAPI_GetParmIntValue(byref(session), node_id, c_char_p(parmname.encode('utf-8')), tupleid, byref(val))
     assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "GetParmIntValue Failed with {0}".format(HAPI_Result(result).name)
     return val.value
 
-def GetParmFloatValue(session, nodeid, parmname, tupleid = 0):
+def GetParmFloatValue(session, node_id, parmname, tupleid = 0):
     """Summary
     
     Parameters
     ----------
     session : TYPE
         Description
-    nodeid : TYPE
+    node_id : TYPE
         Description
     parmname : TYPE
         Description
@@ -523,18 +598,18 @@ def GetParmFloatValue(session, nodeid, parmname, tupleid = 0):
         Description
     """
     val = c_float()
-    result = HAPIlib.HAPI_GetParmFloatValue(byref(session), nodeid, c_char_p(parmname.encode('utf-8')), tupleid, byref(val))
+    result = HAPIlib.HAPI_GetParmFloatValue(byref(session), node_id, c_char_p(parmname.encode('utf-8')), tupleid, byref(val))
     assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "GetParmFloatValue Failed with {0}".format(HAPI_Result(result).name)
     return val.value
 
-def GetParamStringValue(session, nodeid, parmname, tupleid = 0):
+def GetParamStringValue(session, node_id, parmname, tupleid = 0):
     """Summary
     
     Parameters
     ----------
     session : TYPE
         Description
-    nodeid : TYPE
+    node_id : TYPE
         Description
     parmname : TYPE
         Description
@@ -547,18 +622,18 @@ def GetParamStringValue(session, nodeid, parmname, tupleid = 0):
         Description
     """
     stringsh = c_int32()
-    result = HAPIlib.HAPI_GetParmStringValue(byref(session), nodeid, c_char_p(parmname.encode('utf-8')), tupleid, True, byref(stringsh))
+    result = HAPIlib.HAPI_GetParmStringValue(byref(session), node_id, c_char_p(parmname.encode('utf-8')), tupleid, True, byref(stringsh))
     assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "GetParamStringValue Failed with {0}".format(HAPI_Result(result).name)
     return GetString(session, stringsh)
 
-def SetParmIntValue(session, nodeid, parmname, value, tupleid = 0):
+def SetParmIntValue(session, node_id, parmname, value, tupleid = 0):
     """Summary
     
     Parameters
     ----------
     session : TYPE
         Description
-    nodeid : TYPE
+    node_id : TYPE
         Description
     parmname : TYPE
         Description
@@ -572,18 +647,18 @@ def SetParmIntValue(session, nodeid, parmname, value, tupleid = 0):
     TYPE
         Description
     """
-    result = HAPIlib.HAPI_SetParmIntValue(byref(session), nodeid, c_char_p(parmname.encode('utf-8')), tupleid, value)
+    result = HAPIlib.HAPI_SetParmIntValue(byref(session), node_id, c_char_p(parmname.encode('utf-8')), tupleid, value)
     assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "SetParmIntValue Failed with {0}".format(HAPI_Result(result).name)
     return
 
-def SetParmFloatValue(session, nodeid, parmname, value,  tupleid = 0):
+def SetParmFloatValue(session, node_id, parmname, value,  tupleid = 0):
     """Summary
     
     Parameters
     ----------
     session : TYPE
         Description
-    nodeid : TYPE
+    node_id : TYPE
         Description
     parmname : TYPE
         Description
@@ -597,18 +672,18 @@ def SetParmFloatValue(session, nodeid, parmname, value,  tupleid = 0):
     TYPE
         Description
     """
-    result = HAPIlib.HAPI_SetParmFloatValue(byref(session), nodeid, c_char_p(parmname.encode('utf-8')), tupleid, value)
+    result = HAPIlib.HAPI_SetParmFloatValue(byref(session), node_id, c_char_p(parmname.encode('utf-8')), tupleid, value)
     assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "SetParmFloatValue Failed with {0}".format(HAPI_Result(result).name)
     return
 
-def SetParamStringValue(session, nodeid, parmid, value, tupleid = 0):
+def SetParamStringValue(session, node_id, parmid, value, tupleid = 0):
     """Summary
     
     Parameters
     ----------
     session : TYPE
         Description
-    nodeid : TYPE
+    node_id : TYPE
         Description
     parmid : TYPE
         Description
@@ -622,7 +697,7 @@ def SetParamStringValue(session, nodeid, parmid, value, tupleid = 0):
     TYPE
         Description
     """
-    result = HAPIlib.HAPI_SetParmStringValue(byref(session), nodeid, c_char_p(value.encode('utf-8')), parmid, tupleid)
+    result = HAPIlib.HAPI_SetParmStringValue(byref(session), node_id, c_char_p(value.encode('utf-8')), parmid, tupleid)
     assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "SetParamStringValue Failed with {0}".format(HAPI_Result(result).name)
     return
 
@@ -825,6 +900,78 @@ StorageTypeToSetAttrib = {
     HAPI_StorageType.HAPI_STORAGETYPE_FLOAT   : SetAttributeFloatData,
     HAPI_StorageType.HAPI_STORAGETYPE_FLOAT64 : SetAttributeFloat64Data,
     HAPI_StorageType.HAPI_STORAGETYPE_STRING  : SetAttributeStringData
+    }
+
+def GetAttributeNames(session, node_id, part_info, attrib_type = HAPI_AttributeOwner.HAPI_ATTROWNER_POINT):
+    attrib_count = part_info.attributeCounts[attrib_type]
+    string_handle_buffer = ( c_int32 * attrib_count) ()
+    result = HAPIlib. HAPI_GetAttributeNames(
+        byref(session),
+        node_id, 
+        part_info.id, 
+        attrib_type, 
+        byref(string_handle_buffer), 
+        attrib_count)
+    assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "GetAttributeNames Failed with {0}".format(HAPI_Result(result).name)
+    attrib_names = []
+    for string_handle in string_handle_buffer:
+        attrib_names.append(GetString(session, string_handle))
+    return attrib_names
+
+
+def GetAttributeInfo(session, node_id, part_id, name, attrib_type):
+    attrib_info = HAPI_AttributeInfo()
+    result = HAPIlib.HAPI_GetAttributeInfo( 
+        byref(session), 
+        c_int(node_id), 
+        c_int(part_id), 
+        c_char_p(name.encode('utf-8')),
+        attrib_type, 
+        byref(attrib_info));
+    assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "GetAttributeInfo Failed with {0}".format(HAPI_Result(result).name)
+    return attrib_info
+
+def GetAttributeIntData(session, node_id, part_id, name, attrib_info):
+    data_buffer = ( c_int32 * (attrib_info.count * attrib_info.tupleSize))()
+    result = HAPIlib.HAPI_GetAttributeFloatData(byref(session), node_id, part_id, c_char_p(name.encode('utf-8')), byref(attrib_info), -1,byref(data_buffer), 0, attrib_info.count)
+    assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "GetAttributeIntData Failed with {0}".format(HAPI_Result(result).name)
+    data_np = np.frombuffer(data_buffer, np.int32)
+    return np.reshape(data_np, (attrib_info.count, attrib_info.tupleSize))
+
+def GetAttributeInt64Data(session, node_id, part_id, name, attrib_info):
+    data_buffer = ( c_int64 * (attrib_info.count * attrib_info.tupleSize))()
+    result = HAPIlib.HAPI_GetAttributeFloatData(byref(session), node_id, part_id, c_char_p(name.encode('utf-8')), byref(attrib_info), -1,byref(data_buffer), 0, attrib_info.count)
+    assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "GetAttributeInt64Data Failed with {0}".format(HAPI_Result(result).name)
+    data_np = np.frombuffer(data_buffer, np.int64)
+    return np.reshape(data_np, (attrib_info.count, attrib_info.tupleSize))
+
+def GetAttributeFloatData(session, node_id, part_id, name, attrib_info):
+    data_buffer = ( c_float * (attrib_info.count * attrib_info.tupleSize))()
+    result = HAPIlib.HAPI_GetAttributeFloatData(byref(session), node_id, part_id, c_char_p(name.encode('utf-8')), byref(attrib_info), -1,byref(data_buffer), 0, attrib_info.count)
+    assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "GetAttributeFloatData Failed with {0}".format(HAPI_Result(result).name)
+    data_np = np.frombuffer(data_buffer, np.float32)
+    return np.reshape(data_np, (attrib_info.count, attrib_info.tupleSize))
+
+def GetAttributeFloat64Data(session, node_id, part_id, name, attrib_info):
+    data_buffer = ( c_float64 * (attrib_info.count * attrib_info.tupleSize))()
+    result = HAPIlib.HAPI_GetAttributeFloatData(byref(session), node_id, part_id, c_char_p(name.encode('utf-8')), byref(attrib_info), -1,byref(data_buffer), 0, attrib_info.count)
+    assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "GetAttributeFloat64Data Failed with {0}".format(HAPI_Result(result).name)
+    data_np = np.frombuffer(data_buffer, np.float64)
+    return np.reshape(data_np, (attrib_info.count, attrib_info.tupleSize))
+
+def GetAttributeStringData(session, node_id, part_id, name, attrib_info):
+    data_buffer = ( c_char_p * (attrib_info.count * attrib_info.tupleSize))()
+    result = HAPIlib.HAPI_GetAttributeFloatData(byref(session), node_id, part_id, c_char_p(name.encode('utf-8')), byref(attrib_info), -1,byref(data_buffer), 0, attrib_info.count)
+    assert result == HAPI_Result.HAPI_RESULT_SUCCESS, "GetAttributeStringData Failed with {0}".format(HAPI_Result(result).name)
+    data_np = np.frombuffer(data_buffer, np.bytes_)
+    return np.reshape(data_np, (attrib_info.count, attrib_info.tupleSize))
+
+StorageTypeToGetAttrib = {
+    HAPI_StorageType.HAPI_STORAGETYPE_INT     : GetAttributeIntData,
+    HAPI_StorageType.HAPI_STORAGETYPE_INT64   : GetAttributeInt64Data,
+    HAPI_StorageType.HAPI_STORAGETYPE_FLOAT   : GetAttributeFloatData,
+    HAPI_StorageType.HAPI_STORAGETYPE_FLOAT64 : GetAttributeFloat64Data,
+    HAPI_StorageType.HAPI_STORAGETYPE_STRING  : GetAttributeStringData
     }
 
 def SetVertexList(session, node_id, vertex_list_array):

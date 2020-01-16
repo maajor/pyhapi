@@ -18,7 +18,6 @@ def main():
              [ 1.0, 0.0, 1.0],  
              [ 1.0, 1.0, 0.0], 
              [ 1.0, 1.0, 1.0]], dtype = np.float32),
-        has_knot = True
         faces = np.array(
             [[ 0, 2, 6, 4],
              [ 2, 3, 7, 6],
