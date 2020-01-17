@@ -1,27 +1,32 @@
-import pyhapi as ph
+"""[summary]
+"""
 import numpy as np
 
+import pyhapi as ph
+
 def main():
-    session = ph.HSessionManager.GetOrCreateDefaultSession()
+    """[summary]
+    """
+    session = ph.HSessionManager.get_or_create_default_session()
 
     #create an inputnode where you can set geometry
     geo_inputnode = ph.HInputNode(session, "Curve")
 
     #create a geocurve
     curve_geo = ph.HGeoCurve(
-        vertices = np.array(
-            [[-4.0, 0.0,  4.0],
+        vertices=np.array(
+            [[-4.0, 0.0, 4.0],
              [-4.0, 0.0, -4.0],
-             [ 4.0, 0.0, -4.0],
-             [ 4.0, 0.0,  4.0]], dtype = np.float32),
-        curve_knots = np.array(
-            [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0], dtype = np.float32),
-        curve_type = ph.HAPI_CurveType.HAPI_CURVETYPE_NURBS)
+             [4.0, 0.0, -4.0],
+             [4.0, 0.0, 4.0]], dtype=np.float32),
+        curve_knots=np.array(
+            [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0], dtype=np.float32),
+        curve_type=ph.HAPI_CurveType.HAPI_CURVETYPE_NURBS)
 
     #set this geocurve as geometry of inputnode
-    geo_inputnode.SetGeometry(curve_geo)
+    geo_inputnode.set_geometry(curve_geo)
 
-    session.SaveHIP()
-    
+    session.save_hip()
+
 if __name__ == "__main__":
     main()

@@ -1,4 +1,7 @@
-from . import *
+from ctypes import Structure, Array,\
+     c_int, c_int32, c_int64, c_float, c_bool, c_double
+import enum
+import numpy as np
 
 #https://gist.github.com/christoph2/9c390e5c094796903097
 class StructureWithEnums(Structure):
@@ -13,10 +16,8 @@ class StructureWithEnums(Structure):
             EnumClass = _map[name]
             if isinstance(value, Array):
                 return [EnumClass(x) for x in value]
-            else:
-                return EnumClass(value)
-        else:
-            return value
+            return EnumClass(value)
+        return value
 
     def __str__(self):
         result = []
@@ -358,7 +359,7 @@ class HAPI_InputType(enum.IntEnum):
     HAPI_INPUT_GEOMETRY                                 = 1
     HAPI_INPUT_MAX                                      = 2
 
-NpTypeToHStorageType = {
+NP_TYPE_TO_HSTORAGE_TYPE = {
     np.dtype('int32')   : HAPI_StorageType.HAPI_STORAGETYPE_INT,
     np.dtype('int64')   : HAPI_StorageType.HAPI_STORAGETYPE_INT64,
     np.dtype('float32') : HAPI_StorageType.HAPI_STORAGETYPE_FLOAT,
@@ -379,46 +380,47 @@ class HAPI_PartInfo(StructureWithEnums):
                 ('instanceCount', c_int32),
                 ('hasChanged', c_bool)]
     _map = {
-         "type":  HAPI_PartType
+        "type":  HAPI_PartType
     }
 
     def __init__(self):
+        super(HAPI_PartInfo, self).__init__()
         self.attributeCounts[0] = 0
         self.attributeCounts[1] = 0
         self.attributeCounts[2] = 0
         self.attributeCounts[3] = 0
 
     @property
-    def pointAttribCount(self): 
-        return self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_POINT] 
-       
-    @pointAttribCount.setter 
-    def pointAttribCount(self, v):  
-        self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_POINT]  = v 
+    def pointAttribCount(self):
+        return self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_POINT]
+
+    @pointAttribCount.setter
+    def pointAttribCount(self, v):
+        self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_POINT] = v
 
     @property
-    def vertexAttribCount(self): 
-        return self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_VERTEX] 
-       
+    def vertexAttribCount(self):
+        return self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_VERTEX]
+
     @vertexAttribCount.setter 
-    def vertexAttribCount(self, v):  
-        self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_VERTEX]  = v 
+    def vertexAttribCount(self, v):
+        self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_VERTEX] = v
 
     @property
-    def primAttribCount(self): 
-        return self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_PRIM] 
-       
+    def primAttribCount(self):
+        return self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_PRIM]
+
     @primAttribCount.setter 
-    def primAttribCount(self, v):  
+    def primAttribCount(self, v):
         self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_PRIM]  = v 
 
     @property
-    def detailAttribCount(self): 
-        return self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_DETAIL] 
-       
-    @detailAttribCount.setter 
-    def detailAttribCount(self, v):  
-        self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_DETAIL]  = v 
+    def detailAttribCount(self):
+        return self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_DETAIL]
+
+    @detailAttribCount.setter
+    def detailAttribCount(self, v):
+        self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_DETAIL] = v
 
 class HAPI_CurveInfo(StructureWithEnums): 
     _fields_ = [('curveType', c_int32),  
@@ -442,11 +444,11 @@ class HAPI_AttributeInfo(StructureWithEnums):
                 ('count', c_int32),
                 ('tupleSize', c_int32),
                 ('typeInfo', c_int32)]
-    _map     = {
-         "owner":  HAPI_AttributeOwner,
-         "storage":  HAPI_StorageType,
-         "originalOwner":  HAPI_AttributeOwner,
-         "typeInfo":  HAPI_AttributeTypeInfo
+    _map = {
+        "owner": HAPI_AttributeOwner,
+        "storage": HAPI_StorageType,
+        "originalOwner": HAPI_AttributeOwner,
+        "typeInfo": HAPI_AttributeTypeInfo
     }
 
 class SessionConnectionState(enum.IntEnum):
@@ -484,20 +486,20 @@ class HAPI_AssetInfo(Structure):
                 ('haveObjectsChanged', c_int32),  
                 ('haveMaterialsChanged', c_int32)]  
 
-class HAPI_ObjectInfo(Structure):  
-    _fields_ = [('nameSH', c_int32),  
-                ('objectInstancePathSH', c_int32),  
-                ('hasTransformChanged', c_bool),  
-                ('haveGeosChanged', c_bool),  
-                ('isVisible', c_bool),  
-                ('isInstancer ', c_bool),  
-                ('isInstanced', c_bool),  
-                ('geoCount', c_int32),  
-                ('nodeId', c_int32),  
-                ('objectToInstanceId', c_int32)]  
+class HAPI_ObjectInfo(Structure):
+    _fields_ = [('nameSH', c_int32),
+                ('objectInstancePathSH', c_int32),
+                ('hasTransformChanged', c_bool),
+                ('haveGeosChanged', c_bool),
+                ('isVisible', c_bool),
+                ('isInstancer ', c_bool),
+                ('isInstanced', c_bool),
+                ('geoCount', c_int32),
+                ('nodeId', c_int32),
+                ('objectToInstanceId', c_int32)]
 
-class HAPI_GeoInfo(StructureWithEnums):  
-    _fields_ = [('type', c_int32),  
+class HAPI_GeoInfo(StructureWithEnums):
+    _fields_ = [('type', c_int32),
                 ('nameSH', c_int32),
                 ('nodeId', c_int32),
                 ('isEditable', c_bool),
@@ -509,11 +511,11 @@ class HAPI_GeoInfo(StructureWithEnums):
                 ('primitiveGroupCount', c_int32),
                 ('partCount', c_int32)]
     _map = {
-         "type":  HAPI_GeoType 
+        "type": HAPI_GeoType 
     }
 
-class HAPI_CookOptions(Structure):  
-    _fields_ = [('splitGeosByGroup', c_bool),  
+class HAPI_CookOptions(Structure):
+    _fields_ = [('splitGeosByGroup', c_bool),
                 ('splitGeosByAttribute', c_bool),
                 ('splitAttrSH', c_int32),
                 ('maxVerticesPerPrimitive', c_int32),
@@ -527,8 +529,8 @@ class HAPI_CookOptions(Structure):
                 ('checkPartChanges', c_bool),
                 ('extraFlags', c_int32)]
 
-class HAPI_NodeInfo(StructureWithEnums):  
-    _fields_ = [('id', c_int32),  
+class HAPI_NodeInfo(StructureWithEnums):
+    _fields_ = [('id', c_int32),
                 ('parentId', c_int32),
                 ('nameSH', c_int32),
                 ('type', c_int),
@@ -547,11 +549,11 @@ class HAPI_NodeInfo(StructureWithEnums):
                 ('createdPostAssetLoad', c_bool),
                 ('isTimeDependent', c_bool)]
     _map = {
-         "type":  HAPI_NodeType
+        "type": HAPI_NodeType
     }
 
-class HAPI_ParmInfo(StructureWithEnums):  
-    _fields_ = [('id', c_int32),  
+class HAPI_ParmInfo(StructureWithEnums):
+    _fields_ = [('id', c_int32),
                 ('parentId', c_int32),
                 ('childIndex', c_int32),
                 ('type', c_int),
@@ -594,13 +596,13 @@ class HAPI_ParmInfo(StructureWithEnums):
                 ('visibilityConditionSH', c_int32),
                 ('disabledConditionSH', c_int32)]
     _map = {
-         "type":  HAPI_ParmType,
-         "scriptType" : HAPI_PrmScriptType,
-         "permissions" : HAPI_Permissions,
-         "choiceListType" : HAPI_ChoiceListType,
-         "inputNodeType" : HAPI_NodeType,
-         "inputNodeFlag" : HAPI_NodeFlags,
-         "rampType" : HAPI_RampType
+        "type": HAPI_ParmType,
+        "scriptType" : HAPI_PrmScriptType,
+        "permissions" : HAPI_Permissions,
+        "choiceListType" : HAPI_ChoiceListType,
+        "inputNodeType" : HAPI_NodeType,
+        "inputNodeFlag" : HAPI_NodeFlags,
+        "rampType" : HAPI_RampType
     }
 
     def IsInt(self):
@@ -611,24 +613,24 @@ class HAPI_ParmInfo(StructureWithEnums):
 
 
     def isFloat(self):
-        return (self.type >= HAPI_ParmType.HAPI_PARMTYPE_FLOAT_START and\
-            self.type <= HAPI_ParmType.HAPI_PARMTYPE_FLOAT_END)
-        
+        return self.type >= HAPI_ParmType.HAPI_PARMTYPE_FLOAT_START and\
+            self.type <= HAPI_ParmType.HAPI_PARMTYPE_FLOAT_END
+
     def isString(self):
         return (self.type >= HAPI_ParmType.HAPI_PARMTYPE_STRING_START and\
                 self.type <= HAPI_ParmType.HAPI_PARMTYPE_STRING_END)\
                 or self.type == HAPI_ParmType.HAPI_PARMTYPE_LABEL\
                 or self.type == HAPI_ParmType.HAPI_PARMTYPE_PATH_FILE_DIR
-        
+
     def isPath(self):
         return (self.type >= HAPI_ParmType.HAPI_PARMTYPE_PATH_START and\
                 self.type <= HAPI_ParmType.HAPI_PARMTYPE_PATH_END)\
                 or self.type == HAPI_ParmType.HAPI_PARMTYPE_PATH_FILE_DIR
 
     def isNode(self):
-        return (self.type >= HAPI_ParmType.HAPI_PARMTYPE_NODE_START and\
-                self.type <= HAPI_ParmType.HAPI_PARMTYPE_NODE_END)
+        return self.type >= HAPI_ParmType.HAPI_PARMTYPE_NODE_START and\
+                self.type <= HAPI_ParmType.HAPI_PARMTYPE_NODE_END
 
     def isNonValue(self):
-        return (self.type >= HAPI_ParmType.HAPI_PARMTYPE_NONVALUE_START and\
-                self.type <= HAPI_ParmType.HAPI_PARMTYPE_NONVALUE_END)
+        return self.type >= HAPI_ParmType.HAPI_PARMTYPE_NONVALUE_START and\
+                self.type <= HAPI_ParmType.HAPI_PARMTYPE_NONVALUE_END
