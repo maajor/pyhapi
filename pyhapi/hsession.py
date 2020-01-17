@@ -18,7 +18,7 @@ class HSession():
     def __init__(self):
         """Summary
         """
-        self.hapi_session = HDATA.HAPI_Session(HDATA.HAPI_SessionType.HAPI_SESSION_THRIFT, 0)
+        self.hapi_session = HDATA.Session(HDATA.SessionType.THRIFT, 0)
         self.connected_state = HDATA.SessionConnectionState.NOT_CONNECTED
         self.nodes = {}
         self.process_id = -1
@@ -73,11 +73,11 @@ class HSession():
         """
         self.check_and_close_existing_session()
 
-        self.hapi_session = HDATA.HAPI_Session(HDATA.HAPI_SessionType.HAPI_SESSION_THRIFT, 0)
+        self.hapi_session = HDATA.Session(HDATA.SessionType.THRIFT, 0)
         self.connected_state = HDATA.SessionConnectionState.FAILED_TO_CONNECT
 
         if create_session:
-            server_options = HDATA.HAPI_ThriftServerOptions(auto_close, timeout)
+            server_options = HDATA.ThriftServerOptions(auto_close, timeout)
             self.process_id = HAPI.StartThriftNamedPipeServer(server_options)
 
         HAPI.CreateThriftNamedPipeSession(self.hapi_session)

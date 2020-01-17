@@ -21,7 +21,7 @@ def main():
              [4.0, 0.0, 4.0]], dtype=np.float32),
         curve_knots=np.array(
             [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0], dtype=np.float32),
-        curve_type=ph.HAPI_CurveType.HAPI_CURVETYPE_NURBS)
+        curve_type=ph.CurveType.NURBS)
 
     #set this geocurve as geometry of inputnode
     geo_inputnode.set_geometry(curve_geo)

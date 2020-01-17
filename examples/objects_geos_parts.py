@@ -16,7 +16,7 @@ def main():
     for geo in asset_geos:
         print("Geo {0} has attribute {1}".format(geo, geo.get_attrib_names()))
 
-    print(asset_geos[0].get_attrib_data(ph.AttributeType.POINT, "P"))
+    print(asset_geos[0].get_attrib_data(ph.AttributeOwner.POINT, "P"))
 
     session.save_hip("modifiedScene.hip")
 

@@ -1,9 +1,16 @@
+"""[summary]
+
+Returns:
+    [type]: [description]
+"""
 from ctypes import Structure, Array,\
-     c_int, c_int32, c_int64, c_float, c_bool, c_double
+    c_int, c_int32, c_int64, c_float, c_bool
 import enum
 import numpy as np
 
-#https://gist.github.com/christoph2/9c390e5c094796903097
+# https://gist.github.com/christoph2/9c390e5c094796903097
+
+
 class StructureWithEnums(Structure):
     """Add missing enum feature to ctypes Structures.
     """
@@ -13,362 +20,507 @@ class StructureWithEnums(Structure):
         _map = Structure.__getattribute__(self, '_map')
         value = Structure.__getattribute__(self, name)
         if name in _map:
-            EnumClass = _map[name]
+            enum_class = _map[name]
             if isinstance(value, Array):
-                return [EnumClass(x) for x in value]
-            return EnumClass(value)
+                return [enum_class(x) for x in value]
+            return enum_class(value)
         return value
 
     def __str__(self):
         result = []
         result.append("struct {0} {{".format(self.__class__.__name__))
         for field in self._fields_:
-            attr, attrType = field
+            attr, attr_type = field
             if attr in self._map:
-                attrType = self._map[attr]
+                attr_type = self._map[attr]
             value = getattr(self, attr)
-            result.append("    {0} [{1}] = {2!r}".format(attr, attrType.__name__, value))
+            result.append("    {0} [{1}] = {2!r}".format(
+                attr, attr_type.__name__, value))
         result.append("}")
         return '\n'.join(result)
 
     __repr__ = __str__
 
-class HAPI_License(enum.IntEnum):
-    HAPI_LICENSE_NONE                                   = 0
-    HAPI_LICENSE_HOUDINI_ENGINE                         = 1
-    HAPI_LICENSE_HOUDINI                                = 2
-    HAPI_LICENSE_HOUDINI_FX                             = 3
-    HAPI_LICENSE_HOUDINI_ENGINE_INDIE                   = 4
-    HAPI_LICENSE_HOUDINI_INDIE                          = 5
-    HAPI_LICENSE_MAX                                    = 6
 
-class HAPI_StatusType(enum.IntEnum):
-    HAPI_STATUS_CALL_RESULT                             = 0
-    HAPI_STATUS_COOK_RESULT                             = 1
-    HAPI_STATUS_COOK_STATE                              = 2
-    HAPI_STATUS_MAX                                     = 3
+class LicenseType(enum.IntEnum):
+    """Equivalent of HAPI's HAPI_License
+
+    Args:
+        enum ([type]): [description]
+    """
+    NONE = 0
+    HOUDINI_ENGINE = 1
+    HOUDINI = 2
+    HOUDINI_FX = 3
+    HOUDINI_ENGINE_INDIE = 4
+    HOUDINI_INDIE = 5
+    MAX = 6
 
 
-class HAPI_StatusVerbosity(enum.IntEnum):
-    HAPI_STATUSVERBOSITY_0                              = 0
-    HAPI_STATUSVERBOSITY_1                              = 1
-    HAPI_STATUSVERBOSITY_2                              = 2
-    HAPI_STATUSVERBOSITY_ALL                            = HAPI_STATUSVERBOSITY_2
-    HAPI_STATUSVERBOSITY_ERRORS                         = HAPI_STATUSVERBOSITY_0
-    HAPI_STATUSVERBOSITY_WARNINGS                       = HAPI_STATUSVERBOSITY_1
-    HAPI_STATUSVERBOSITY_MESSAGES                       = HAPI_STATUSVERBOSITY_2
+class StatusType(enum.IntEnum):
+    """Equivalent of HAPI's HAPI_StatusType
 
-class HAPI_Result(enum.IntEnum):
-    HAPI_RESULT_SUCCESS                                 = 0
-    HAPI_RESULT_FAILURE                                 = 1
-    HAPI_RESULT_ALREADY_INITIALIZED                     = 2
-    HAPI_RESULT_NOT_INITIALIZED                         = 3
-    HAPI_RESULT_CANT_LOADFILE                           = 4
-    HAPI_RESULT_PARM_SET_FAILED                         = 5
-    HAPI_RESULT_INVALID_ARGUMENT                        = 6
-    HAPI_RESULT_CANT_LOAD_GEO                           = 7
-    HAPI_RESULT_CANT_GENERATE_PRESET                    = 8
-    HAPI_RESULT_CANT_LOAD_PRESET                        = 9
-    HAPI_RESULT_ASSET_DEF_ALREADY_LOADED                = 10
+    Args:
+        enum ([type]): [description]
+    """
+    CALL_RESULT = 0
+    COOK_RESULT = 1
+    COOK_STATE = 2
+    MAX = 3
 
-    HAPI_RESULT_NO_LICENSE_FOUND                        = 110
-    HAPI_RESULT_DISALLOWED_NC_LICENSE_FOUND             = 120
-    HAPI_RESULT_DISALLOWED_NC_ASSET_WITH_C_LICENSE      = 130
-    HAPI_RESULT_DISALLOWED_NC_ASSET_WITH_LC_LICENSE     = 140
-    HAPI_RESULT_DISALLOWED_LC_ASSET_WITH_C_LICENSE      = 150
-    HAPI_RESULT_DISALLOWED_HENGINEINDIE_W_3PARTY_PLUGIN = 160
 
-    HAPI_RESULT_ASSET_INVALID                           = 200
-    HAPI_RESULT_NODE_INVALID                            = 210
+class StatusVerbosity(enum.IntEnum):
+    """Equivalent of HAPI's HAPI_StatusVerbosity
 
-    HAPI_RESULT_USER_INTERRUPTED                        = 300
+    Args:
+        enum ([type]): [description]
+    """
+    ALL = 2
+    ERRORS = 0
+    WARNINGS = 1
+    MESSAGES = 2
 
-    HAPI_RESULT_INVALID_SESSION                         = 400
 
-class HAPI_ErrorCode(enum.IntEnum):
-    HAPI_ERRORCODE_ASSET_DEF_NOT_FOUND                  = 1<<0
-    HAPI_ERRORCODE_PYTHON_NODE_ERROR                    = 1<<1
+class Result(enum.IntEnum):
+    """Equivalent of HAPI's HAPI_Result
 
-class HAPI_SessionType(enum.IntEnum):
-    HAPI_SESSION_INPROCESS                              = 0
-    HAPI_SESSION_THRIFT                                 = 1
-    HAPI_SESSION_CUSTOM1                                = 2
-    HAPI_SESSION_CUSTOM2                                = 3
-    HAPI_SESSION_CUSTOM3                                = 4
-    HAPI_SESSION_MAX                                    = 5
+    Args:
+        enum ([type]): [description]
+    """
+    SUCCESS = 0
+    FAILURE = 1
+    ALREADY_INITIALIZED = 2
+    NOT_INITIALIZED = 3
+    CANT_LOADFILE = 4
+    PARM_SET_FAILED = 5
+    INVALID_ARGUMENT = 6
+    CANT_LOAD_GEO = 7
+    CANT_GENERATE_PRESET = 8
+    CANT_LOAD_PRESET = 9
+    ASSET_DEF_ALREADY_LOADED = 10
 
-class HAPI_State(enum.IntEnum):
-    HAPI_STATE_READY                                    = 0
-    HAPI_STATE_READY_WITH_FATAL_ERRORS                  = 1
-    HAPI_STATE_READY_WITH_COOK_ERRORS                   = 2
-    HAPI_STATE_STARTING_COOK                            = 3
-    HAPI_STATE_COOKING                                  = 4
-    HAPI_STATE_STARTING_LOAD                            = 5
-    HAPI_STATE_LOADING                                  = 6
-    HAPI_STATE_MAX                                      = 7
+    NO_LICENSE_FOUND = 110
+    DISALLOWED_NC_LICENSE_FOUND = 120
+    DISALLOWED_NC_ASSET_WITH_C_LICENSE = 130
+    DISALLOWED_NC_ASSET_WITH_LC_LICENSE = 140
+    DISALLOWED_LC_ASSET_WITH_C_LICENSE = 150
+    DISALLOWED_HENGINEINDIE_W_3PARTY_PLUGIN = 160
 
-    HAPI_STATE_MAX_READY_STATE                          = HAPI_STATE_READY_WITH_COOK_ERRORS
+    ASSET_INVALID = 200
+    NODE_INVALID = 210
 
-class HAPI_PackedPrimInstancingMode(enum.IntEnum):
-    HAPI_PACKEDPRIM_INSTANCING_MODE_INVALID             = -1
-    HAPI_PACKEDPRIM_INSTANCING_MODE_DISABLED            = 0
-    HAPI_PACKEDPRIM_INSTANCING_MODE_HIERARCHY           = 1
-    HAPI_PACKEDPRIM_INSTANCING_MODE_FLAT                = 2
-    HAPI_PACKEDPRIM_INSTANCING_MODE_MAX                 = 3
+    USER_INTERRUPTED = 300
 
-class HAPI_Permissions(enum.IntEnum):
-    HAPI_PERMISSIONS_NON_APPLICABLE                     = 0
-    HAPI_PERMISSIONS_READ_WRITE                         = 1
-    HAPI_PERMISSIONS_READ_ONLY                          = 2
-    HAPI_PERMISSIONS_WRITE_ONLY                         = 3
-    HAPI_PERMISSIONS_MAX                                = 4
+    INVALID_SESSION = 400
 
-class HAPI_RampType(enum.IntEnum):
-    HAPI_RAMPTYPE_INVALID                               = -1
-    HAPI_RAMPTYPE_FLOAT                                 = 0
-    HAPI_RAMPTYPE_COLOR                                 = 1
-    HAPI_RAMPTYPE_MAX                                   = 2
 
-class HAPI_ParmType(enum.IntEnum):
-    HAPI_PARMTYPE_INT                                   = 0
-    HAPI_PARMTYPE_MULTIPARMLIST                         = 1
-    HAPI_PARMTYPE_TOGGLE                                = 2
-    HAPI_PARMTYPE_BUTTON                                = 3
+class ErrorCode(enum.IntEnum):
+    """Equivalent of HAPI's HAPI_ErrorCode
 
-    HAPI_PARMTYPE_FLOAT                                 = 4
-    HAPI_PARMTYPE_COLOR                                 = 5
+    Args:
+        enum ([type]): [description]
+    """
+    ASSET_DEF_NOT_FOUND = 1 << 0
+    PYTHON_NODE_ERROR = 1 << 1
 
-    HAPI_PARMTYPE_STRING                                = 6
-    HAPI_PARMTYPE_PATH_FILE                             = 7
-    HAPI_PARMTYPE_PATH_FILE_GEO                         = 8
-    HAPI_PARMTYPE_PATH_FILE_IMAGE                       = 9
 
-    HAPI_PARMTYPE_NODE                                  = 10
+class SessionType(enum.IntEnum):
+    """Equivalent of HAPI's HAPI_SessionType
 
-    HAPI_PARMTYPE_FOLDERLIST                            = 11
-    HAPI_PARMTYPE_FOLDERLIST_RADIO                      = 12
+    Args:
+        enum ([type]): [description]
+    """
+    INPROCESS = 0
+    THRIFT = 1
+    CUSTOM1 = 2
+    CUSTOM2 = 3
+    CUSTOM3 = 4
+    MAX = 5
 
-    HAPI_PARMTYPE_FOLDER                                = 13
-    HAPI_PARMTYPE_LABEL                                 = 14
-    HAPI_PARMTYPE_SEPARATOR                             = 15
-    HAPI_PARMTYPE_PATH_FILE_DIR                         = 16
 
-    HAPI_PARMTYPE_MAX                                   = 17
+class State(enum.IntEnum):
+    """Equivalent of HAPI's HAPI_State
 
-    HAPI_PARMTYPE_INT_START                             = HAPI_PARMTYPE_INT
-    HAPI_PARMTYPE_INT_END                               = HAPI_PARMTYPE_BUTTON
+    Args:
+        enum ([type]): [description]
+    """
+    READY = 0
+    READY_WITH_FATAL_ERRORS = 1
+    READY_WITH_COOK_ERRORS = 2
+    STARTING_COOK = 3
+    COOKING = 4
+    STARTING_LOAD = 5
+    LOADING = 6
+    MAX = 7
 
-    HAPI_PARMTYPE_FLOAT_START                           = HAPI_PARMTYPE_FLOAT
-    HAPI_PARMTYPE_FLOAT_END                             = HAPI_PARMTYPE_COLOR
+    MAX_READY_STATE = READY_WITH_COOK_ERRORS
 
-    HAPI_PARMTYPE_STRING_START                          = HAPI_PARMTYPE_STRING
-    HAPI_PARMTYPE_STRING_END                            = HAPI_PARMTYPE_NODE
 
-    HAPI_PARMTYPE_PATH_START                            = HAPI_PARMTYPE_PATH_FILE
-    HAPI_PARMTYPE_PATH_END                              = HAPI_PARMTYPE_PATH_FILE_IMAGE
+class PackedPrimInstancingMode(enum.IntEnum):
+    """Equivalent of HAPI's HAPI_PackedPrimInstancingMode
 
-    HAPI_PARMTYPE_NODE_START                            = HAPI_PARMTYPE_NODE
-    HAPI_PARMTYPE_NODE_END                              = HAPI_PARMTYPE_NODE
+    Args:
+        enum ([type]): [description]
+    """
+    INVALID = -1
+    DISABLED = 0
+    HIERARCHY = 1
+    FLAT = 2
+    MAX = 3
 
-    HAPI_PARMTYPE_CONTAINER_START                       = HAPI_PARMTYPE_FOLDERLIST
-    HAPI_PARMTYPE_CONTAINER_END                         = HAPI_PARMTYPE_FOLDERLIST_RADIO
 
-    HAPI_PARMTYPE_NONVALUE_START                        = HAPI_PARMTYPE_FOLDER
-    HAPI_PARMTYPE_NONVALUE_END                          = HAPI_PARMTYPE_SEPARATOR
+class Permissions(enum.IntEnum):
+    """Equivalent of HAPI's HAPI_Permissions
 
-class HAPI_PrmScriptType(enum.IntEnum):
-    HAPI_PRM_SCRIPT_TYPE_INT                            = 0
-    HAPI_PRM_SCRIPT_TYPE_FLOAT                          = 1
-    HAPI_PRM_SCRIPT_TYPE_ANGLE                          = 2
-    HAPI_PRM_SCRIPT_TYPE_STRING                         = 3
-    HAPI_PRM_SCRIPT_TYPE_FILE                           = 4
-    HAPI_PRM_SCRIPT_TYPE_DIRECTORY                      = 5
-    HAPI_PRM_SCRIPT_TYPE_IMAGE                          = 6
-    HAPI_PRM_SCRIPT_TYPE_GEOMETRY                       = 7
-    HAPI_PRM_SCRIPT_TYPE_TOGGLE                         = 8
-    HAPI_PRM_SCRIPT_TYPE_BUTTON                         = 9
-    HAPI_PRM_SCRIPT_TYPE_VECTOR2                        = 10
-    HAPI_PRM_SCRIPT_TYPE_VECTOR3                        = 11
-    HAPI_PRM_SCRIPT_TYPE_VECTOR4                        = 12
-    HAPI_PRM_SCRIPT_TYPE_INTVECTOR2                     = 13
-    HAPI_PRM_SCRIPT_TYPE_INTVECTOR3                     = 14
-    HAPI_PRM_SCRIPT_TYPE_INTVECTOR4                     = 15
-    HAPI_PRM_SCRIPT_TYPE_UV                             = 16
-    HAPI_PRM_SCRIPT_TYPE_UVW                            = 17
-    HAPI_PRM_SCRIPT_TYPE_DIR                            = 18
-    HAPI_PRM_SCRIPT_TYPE_COLOR                          = 19
-    HAPI_PRM_SCRIPT_TYPE_COLOR4                         = 20
-    HAPI_PRM_SCRIPT_TYPE_OPPATH                         = 21
-    HAPI_PRM_SCRIPT_TYPE_OPLIST                         = 22
-    HAPI_PRM_SCRIPT_TYPE_OBJECT                         = 23
-    HAPI_PRM_SCRIPT_TYPE_OBJECTLIST                     = 24
-    HAPI_PRM_SCRIPT_TYPE_RENDER                         = 25
-    HAPI_PRM_SCRIPT_TYPE_SEPARATOR                      = 26
-    HAPI_PRM_SCRIPT_TYPE_GEOMETRY_DATA                  = 27
-    HAPI_PRM_SCRIPT_TYPE_KEY_VALUE_DICT                 = 28
-    HAPI_PRM_SCRIPT_TYPE_LABEL                          = 29
-    HAPI_PRM_SCRIPT_TYPE_RGBAMASK                       = 30
-    HAPI_PRM_SCRIPT_TYPE_ORDINAL                        = 31
-    HAPI_PRM_SCRIPT_TYPE_RAMP_FLT                       = 32
-    HAPI_PRM_SCRIPT_TYPE_RAMP_RGB                       = 33
-    HAPI_PRM_SCRIPT_TYPE_FLOAT_LOG                      = 34
-    HAPI_PRM_SCRIPT_TYPE_INT_LOG                        = 35
-    HAPI_PRM_SCRIPT_TYPE_DATA                           = 36
-    HAPI_PRM_SCRIPT_TYPE_FLOAT_MINMAX                   = 37
-    HAPI_PRM_SCRIPT_TYPE_INT_MINMAX                     = 38
-    HAPI_PRM_SCRIPT_TYPE_INT_STARTEND                   = 39
-    HAPI_PRM_SCRIPT_TYPE_BUTTONSTRIP                    = 40
-    HAPI_PRM_SCRIPT_TYPE_ICONSTRIP                      = 41
-    HAPI_PRM_SCRIPT_TYPE_GROUPRADIO                     = 1000
-    HAPI_PRM_SCRIPT_TYPE_GROUPCOLLAPSIBLE               = 1001
-    HAPI_PRM_SCRIPT_TYPE_GROUPSIMPLE                    = 1002
-    HAPI_PRM_SCRIPT_TYPE_GROUP                          = 1003
+    Args:
+        enum ([type]): [description]
+    """
+    NON_APPLICABLE = 0
+    READ_WRITE = 1
+    READ_ONLY = 2
+    WRITE_ONLY = 3
+    MAX = 4
 
-class HAPI_ChoiceListType(enum.IntEnum):
-    HAPI_CHOICELISTTYPE_NONE                            = 0
-    HAPI_CHOICELISTTYPE_NORMAL                          = 1
-    HAPI_CHOICELISTTYPE_MINI                            = 2
-    HAPI_CHOICELISTTYPE_REPLACE                         = 3
-    HAPI_CHOICELISTTYPE_TOGGLE                          = 4
 
-class HAPI_PresetType(enum.IntEnum):
-    HAPI_PRESETTYPE_INVALID                             = -1
-    HAPI_PRESETTYPE_BINARY                              = 0
-    HAPI_PRESETTYPE_IDX                                 = 1
-    HAPI_PRESETTYPE_MAX                                 = 2
+class RampType(enum.IntEnum):
+    """Equivalent of HAPI's HAPI_RampType
 
-class HAPI_NodeType(enum.IntEnum):
-    HAPI_NODETYPE_ANY                                   = -1
-    HAPI_NODETYPE_NONE                                  = 0
-    HAPI_NODETYPE_OBJ                                   = 1 << 0
-    HAPI_NODETYPE_SOP                                   = 1 << 1
-    HAPI_NODETYPE_CHOP                                  = 1 << 2
-    HAPI_NODETYPE_ROP                                   = 1 << 3
-    HAPI_NODETYPE_SHOP                                  = 1 << 4
-    HAPI_NODETYPE_COP                                   = 1 << 5
-    HAPI_NODETYPE_VOP                                   = 1 << 6
-    HAPI_NODETYPE_DOP                                   = 1 << 7
-    HAPI_NODETYPE_TOP                                   = 1 << 8
+    Args:
+        enum ([type]): [description]
+    """
+    INVALID = -1
+    FLOAT = 0
+    COLOR = 1
+    MAX = 2
 
-class HAPI_NodeFlags(enum.IntEnum):
-    HAPI_NODEFLAGS_ANY                                  = -1
-    HAPI_NODEFLAGS_NONE                                 = 0
-    HAPI_NODEFLAGS_DISPLAY                              = 1 << 0
-    HAPI_NODEFLAGS_RENDER                               = 1 << 1
-    HAPI_NODEFLAGS_TEMPLATED                            = 1 << 2
-    HAPI_NODEFLAGS_LOCKED                               = 1 << 3
-    HAPI_NODEFLAGS_EDITABLE                             = 1 << 4
-    HAPI_NODEFLAGS_BYPASS                               = 1 << 5
-    HAPI_NODEFLAGS_NETWORK                              = 1 << 6
 
-    HAPI_NODEFLAGS_OBJ_GEOMETRY                         = 1 << 7
-    HAPI_NODEFLAGS_OBJ_CAMERA                           = 1 << 8
-    HAPI_NODEFLAGS_OBJ_LIGHT                            = 1 << 9
-    HAPI_NODEFLAGS_OBJ_SUBNET                           = 1 << 10
+class ParmType(enum.IntEnum):
+    """Equivalent of HAPI's HAPI_ParmType
 
-    HAPI_NODEFLAGS_SOP_CURVE                            = 1 << 11
-    HAPI_NODEFLAGS_SOP_GUIDE                            = 1 << 12
+    Args:
+        enum ([type]): [description]
+    """
+    INT = 0
+    MULTIPARMLIST = 1
+    TOGGLE = 2
+    BUTTON = 3
 
-    HAPI_NODEFLAGS_TOP_NONSCHEDULER                     = 1 << 13
+    FLOAT = 4
+    COLOR = 5
 
-    
-class HAPI_GroupType(enum.IntEnum):
-    HAPI_GROUPTYPE_INVALID                              = -1
-    HAPI_GROUPTYPE_POINT                                = 0
-    HAPI_GROUPTYPE_PRIM                                 = 1
-    HAPI_GROUPTYPE_MAX                                  = 2
+    STRING = 6
+    PATH_FILE = 7
+    PATH_FILE_GEO = 8
+    PATH_FILE_IMAGE = 9
 
-class HAPI_AttributeOwner(enum.IntEnum):
-    HAPI_ATTROWNER_INVALID                              = -1
-    HAPI_ATTROWNER_VERTEX                               = 0
-    HAPI_ATTROWNER_POINT                                = 1
-    HAPI_ATTROWNER_PRIM                                 = 2
-    HAPI_ATTROWNER_DETAIL                               = 3
-    HAPI_ATTROWNER_MAX                                  = 4
+    NODE = 10
 
-#User-friendly Alias for HAPI_AttributeOwner
-class AttributeType(enum.IntEnum):
-    INVALID                                             = -1
-    VERTEX                                              = 0
-    POINT                                               = 1
-    PRIM                                                = 2
-    DETAIL                                              = 3
-    MAX                                                 = 4
+    FOLDERLIST = 11
+    FOLDERLIST_RADIO = 12
 
-class HAPI_CurveType(enum.IntEnum):
-    HAPI_CURVETYPE_INVALID                              = -1
-    HAPI_CURVETYPE_LINEAR                               = 0
-    HAPI_CURVETYPE_NURBS                                = 1
-    HAPI_CURVETYPE_BEZIER                               = 2
-    HAPI_CURVETYPE_MAX                                  = 3
+    FOLDER = 13
+    LABEL = 14
+    SEPARATOR = 15
+    PATH_FILE_DIR = 16
 
-class HAPI_VolumeType(enum.IntEnum):
-    HAPI_VOLUMETYPE_INVALID                             = -1
-    HAPI_VOLUMETYPE_HOUDINI                             = 0
-    HAPI_VOLUMETYPE_VDB                                 = 1
-    HAPI_VOLUMETYPE_MAX                                 = 2
+    MAX = 17
 
-class HAPI_StorageType(enum.IntEnum):
-    HAPI_STORAGETYPE_INVALID                            = -1
-    HAPI_STORAGETYPE_INT                                = 0
-    HAPI_STORAGETYPE_INT64                              = 1
-    HAPI_STORAGETYPE_FLOAT                              = 2
-    HAPI_STORAGETYPE_FLOAT64                            = 3
-    HAPI_STORAGETYPE_STRING                             = 4
-    HAPI_STORAGETYPE_MAX                                = 5
+    INT_START = INT
+    INT_END = BUTTON
 
-class HAPI_AttributeTypeInfo(enum.IntEnum):
-    HAPI_ATTRIBUTE_TYPE_INVALID                         = -1
-    HAPI_ATTRIBUTE_TYPE_NONE                            = 0
-    HAPI_ATTRIBUTE_TYPE_POINT                           = 1
-    HAPI_ATTRIBUTE_TYPE_HPOINT                          = 2
-    HAPI_ATTRIBUTE_TYPE_VECTOR                          = 3
-    HAPI_ATTRIBUTE_TYPE_NORMAL                          = 4
-    HAPI_ATTRIBUTE_TYPE_COLOR                           = 5
-    HAPI_ATTRIBUTE_TYPE_QUATERNION                      = 6
-    HAPI_ATTRIBUTE_TYPE_MATRIX3                         = 7
-    HAPI_ATTRIBUTE_TYPE_MATRIX                          = 8
-    HAPI_ATTRIBUTE_TYPE_ST                              = 9
-    HAPI_ATTRIBUTE_TYPE_HIDDEN                          = 10
-    HAPI_ATTRIBUTE_TYPE_BOX2                            = 11
-    HAPI_ATTRIBUTE_TYPE_BOX                             = 12
-    HAPI_ATTRIBUTE_TYPE_TEXTURE                         = 13
-    HAPI_ATTRIBUTE_TYPE_MAX                             = 14
+    FLOAT_START = FLOAT
+    FLOAT_END = COLOR
 
-class HAPI_GeoType(enum.IntEnum):
-    HAPI_GEOTYPE_INVALID                                = -1
-    HAPI_GEOTYPE_DEFAULT                                = 0
-    HAPI_GEOTYPE_INTERMEDIATE                           = 1
-    HAPI_GEOTYPE_INPUT                                  = 2
-    HAPI_GEOTYPE_CURVE                                  = 3
-    HAPI_GEOTYPE_MAX                                    = 4
+    STRING_START = STRING
+    STRING_END = NODE
 
-class HAPI_PartType(enum.IntEnum):
-    HAPI_PARTTYPE_INVALID                               = -1
-    HAPI_PARTTYPE_MESH                                  = 0
-    HAPI_PARTTYPE_CURVE                                 = 1
-    HAPI_PARTTYPE_VOLUME                                = 2
-    HAPI_PARTTYPE_INSTANCER                             = 3
-    HAPI_PARTTYPE_BOX                                   = 4
-    HAPI_PARTTYPE_SPHERE                                = 3
-    HAPI_PARTTYPE_MAX                                   = 4
+    PATH_START = PATH_FILE
+    PATH_END = PATH_FILE_IMAGE
 
-class HAPI_InputType(enum.IntEnum):
-    HAPI_INPUT_INVALID                                  = -1
-    HAPI_INPUT_TRANSFORM                                = 0
-    HAPI_INPUT_GEOMETRY                                 = 1
-    HAPI_INPUT_MAX                                      = 2
+    NODE_START = NODE
+    NODE_END = NODE
+
+    CONTAINER_START = FOLDERLIST
+    CONTAINER_END = FOLDERLIST_RADIO
+
+    NONVALUE_START = FOLDER
+    NONVALUE_END = SEPARATOR
+
+
+class PrmScriptType(enum.IntEnum):
+    """Equivalent of HAPI's HAPI_PrmScriptType
+
+    Args:
+        enum ([type]): [description]
+    """
+    INT = 0
+    FLOAT = 1
+    ANGLE = 2
+    STRING = 3
+    FILE = 4
+    DIRECTORY = 5
+    IMAGE = 6
+    GEOMETRY = 7
+    TOGGLE = 8
+    BUTTON = 9
+    VECTOR2 = 10
+    VECTOR3 = 11
+    VECTOR4 = 12
+    INTVECTOR2 = 13
+    INTVECTOR3 = 14
+    INTVECTOR4 = 15
+    UV = 16
+    UVW = 17
+    DIR = 18
+    COLOR = 19
+    COLOR4 = 20
+    OPPATH = 21
+    OPLIST = 22
+    OBJECT = 23
+    OBJECTLIST = 24
+    RENDER = 25
+    SEPARATOR = 26
+    GEOMETRY_DATA = 27
+    KEY_VALUE_DICT = 28
+    LABEL = 29
+    RGBAMASK = 30
+    ORDINAL = 31
+    RAMP_FLT = 32
+    RAMP_RGB = 33
+    FLOAT_LOG = 34
+    INT_LOG = 35
+    DATA = 36
+    FLOAT_MINMAX = 37
+    INT_MINMAX = 38
+    INT_STARTEND = 39
+    BUTTONSTRIP = 40
+    ICONSTRIP = 41
+    GROUPRADIO = 1000
+    GROUPCOLLAPSIBLE = 1001
+    GROUPSIMPLE = 1002
+    GROUP = 1003
+
+
+class ChoiceListType(enum.IntEnum):
+    """Equivalent of HAPI's HAPI_ChoiceListType
+
+    Args:
+        enum ([type]): [description]
+    """
+    NONE = 0
+    NORMAL = 1
+    MINI = 2
+    REPLACE = 3
+    TOGGLE = 4
+
+
+class PresetType(enum.IntEnum):
+    """Equivalent of HAPI's HAPI_PresetType
+
+    Args:
+        enum ([type]): [description]
+    """
+    INVALID = -1
+    BINARY = 0
+    IDX = 1
+    MAX = 2
+
+
+class NodeType(enum.IntEnum):
+    """Equivalent of HAPI's HAPI_NodeType
+
+    Args:
+        enum ([type]): [description]
+    """
+    ANY = -1
+    NONE = 0
+    OBJ = 1 << 0
+    SOP = 1 << 1
+    CHOP = 1 << 2
+    ROP = 1 << 3
+    SHOP = 1 << 4
+    COP = 1 << 5
+    VOP = 1 << 6
+    DOP = 1 << 7
+    TOP = 1 << 8
+
+
+class NodeFlags(enum.IntEnum):
+    """Equivalent of HAPI's HAPI_NodeFlags
+
+    Args:
+        enum ([type]): [description]
+    """
+    ANY = -1
+    NONE = 0
+    DISPLAY = 1 << 0
+    RENDER = 1 << 1
+    TEMPLATED = 1 << 2
+    LOCKED = 1 << 3
+    EDITABLE = 1 << 4
+    BYPASS = 1 << 5
+    NETWORK = 1 << 6
+
+    OBJ_GEOMETRY = 1 << 7
+    OBJ_CAMERA = 1 << 8
+    OBJ_LIGHT = 1 << 9
+    OBJ_SUBNET = 1 << 10
+
+    SOP_CURVE = 1 << 11
+    SOP_GUIDE = 1 << 12
+
+    TOP_NONSCHEDULER = 1 << 13
+
+
+class GroupType(enum.IntEnum):
+    """Equivalent of HAPI's HAPI_GroupType
+
+    Args:
+        enum ([type]): [description]
+    """
+    INVALID = -1
+    POINT = 0
+    PRIM = 1
+    MAX = 2
+
+
+class AttributeOwner(enum.IntEnum):
+    """Equivalent of HAPI's HAPI_AttributeOwner
+
+    Args:
+        enum ([type]): [description]
+    """
+    INVALID = -1
+    VERTEX = 0
+    POINT = 1
+    PRIM = 2
+    DETAIL = 3
+    MAX = 4
+
+class CurveType(enum.IntEnum):
+    """Equivalent of HAPI's HAPI_CurveType
+
+    Args:
+        enum ([type]): [description]
+    """
+    INVALID = -1
+    LINEAR = 0
+    NURBS = 1
+    BEZIER = 2
+    MAX = 3
+
+
+class VolumeType(enum.IntEnum):
+    """Equivalent of HAPI's HAPI_VolumeType
+
+    Args:
+        enum ([type]): [description]
+    """
+    INVALID = -1
+    HOUDINI = 0
+    VDB = 1
+    MAX = 2
+
+
+class StorageType(enum.IntEnum):
+    """Equivalent of HAPI's HAPI_StorageType
+
+    Args:
+        enum ([type]): [description]
+    """
+    INVALID = -1
+    INT = 0
+    INT64 = 1
+    FLOAT = 2
+    FLOAT64 = 3
+    STRING = 4
+    MAX = 5
+
+
+class AttributeTypeInfo(enum.IntEnum):
+    """Equivalent of HAPI's HAPI_AttributeTypeInfo
+
+    Args:
+        enum ([type]): [description]
+    """
+    INVALID = -1
+    NONE = 0
+    POINT = 1
+    HPOINT = 2
+    VECTOR = 3
+    NORMAL = 4
+    COLOR = 5
+    QUATERNION = 6
+    MATRIX3 = 7
+    MATRIX = 8
+    ST = 9
+    HIDDEN = 10
+    BOX2 = 11
+    BOX = 12
+    TEXTURE = 13
+    MAX = 14
+
+
+class HGeoType(enum.IntEnum):
+    """Equivalent of HAPI's HAPI_GeoType
+
+    Args:
+        enum ([type]): [description]
+    """
+    INVALID = -1
+    DEFAULT = 0
+    INTERMEDIATE = 1
+    INPUT = 2
+    CURVE = 3
+    MAX = 4
+
+
+class PartType(enum.IntEnum):
+    """Equivalent of HAPI's HAPI_PartType
+
+    Args:
+        enum ([type]): [description]
+    """
+    INVALID = -1
+    MESH = 0
+    CURVE = 1
+    VOLUME = 2
+    INSTANCER = 3
+    BOX = 4
+    SPHERE = 3
+    MAX = 4
+
+
+class InputType(enum.IntEnum):
+    """Equivalent of HAPI's HAPI_InputType
+
+    Args:
+        enum ([type]): [description]
+    """
+    INVALID = -1
+    TRANSFORM = 0
+    GEOMETRY = 1
+    MAX = 2
+
 
 NP_TYPE_TO_HSTORAGE_TYPE = {
-    np.dtype('int32')   : HAPI_StorageType.HAPI_STORAGETYPE_INT,
-    np.dtype('int64')   : HAPI_StorageType.HAPI_STORAGETYPE_INT64,
-    np.dtype('float32') : HAPI_StorageType.HAPI_STORAGETYPE_FLOAT,
-    np.dtype('float64') : HAPI_StorageType.HAPI_STORAGETYPE_FLOAT64,
-    np.dtype('bytes_')  : HAPI_StorageType.HAPI_STORAGETYPE_STRING}
+    np.dtype('int32'): StorageType.INT,
+    np.dtype('int64'): StorageType.INT64,
+    np.dtype('float32'): StorageType.FLOAT,
+    np.dtype('float64'): StorageType.FLOAT64,
+    np.dtype('bytes_'): StorageType.STRING}
 
 
-class HAPI_PartInfo(StructureWithEnums): 
-    _fields_ = [('id', c_int32),  
+class PartInfo(StructureWithEnums):
+    """Equivalent of HAPI's HAPI_PartInfo
+
+    Args:
+        StructureWithEnums ([type]): [description]
+
+    Returns:
+        [type]: [description]
+    """
+    _fields_ = [('id', c_int32),
                 ('nameSH', c_int32),
                 ('type', c_int32),
                 ('faceCount', c_int32),
@@ -380,50 +532,98 @@ class HAPI_PartInfo(StructureWithEnums):
                 ('instanceCount', c_int32),
                 ('hasChanged', c_bool)]
     _map = {
-        "type":  HAPI_PartType
+        "type":  PartType
     }
 
     def __init__(self):
-        super(HAPI_PartInfo, self).__init__()
+        """[summary]
+        """
+        super(PartInfo, self).__init__()
         self.attributeCounts[0] = 0
         self.attributeCounts[1] = 0
         self.attributeCounts[2] = 0
         self.attributeCounts[3] = 0
 
     @property
-    def pointAttribCount(self):
-        return self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_POINT]
+    def point_attrib_count(self):
+        """[summary]
 
-    @pointAttribCount.setter
-    def pointAttribCount(self, v):
-        self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_POINT] = v
+        Returns:
+            [type]: [description]
+        """
+        return self.attributeCounts[AttributeOwner.POINT]
 
-    @property
-    def vertexAttribCount(self):
-        return self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_VERTEX]
+    @point_attrib_count.setter
+    def point_attrib_count(self, value):
+        """[summary]
 
-    @vertexAttribCount.setter 
-    def vertexAttribCount(self, v):
-        self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_VERTEX] = v
-
-    @property
-    def primAttribCount(self):
-        return self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_PRIM]
-
-    @primAttribCount.setter 
-    def primAttribCount(self, v):
-        self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_PRIM]  = v 
+        Args:
+            v ([type]): [description]
+        """
+        self.attributeCounts[AttributeOwner.POINT] = value
 
     @property
-    def detailAttribCount(self):
-        return self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_DETAIL]
+    def vertex_attrib_count(self):
+        """[summary]
 
-    @detailAttribCount.setter
-    def detailAttribCount(self, v):
-        self.attributeCounts[HAPI_AttributeOwner.HAPI_ATTROWNER_DETAIL] = v
+        Returns:
+            [type]: [description]
+        """
+        return self.attributeCounts[AttributeOwner.VERTEX]
 
-class HAPI_CurveInfo(StructureWithEnums): 
-    _fields_ = [('curveType', c_int32),  
+    @vertex_attrib_count.setter
+    def vertex_attrib_count(self, value):
+        """[summary]
+
+        Args:
+            v ([type]): [description]
+        """
+        self.attributeCounts[AttributeOwner.VERTEX] = value
+
+    @property
+    def prim_attrib_count(self):
+        """[summary]
+
+        Returns:
+            [type]: [description]
+        """
+        return self.attributeCounts[AttributeOwner.PRIM]
+
+    @prim_attrib_count.setter
+    def prim_attrib_count(self, value):
+        """[summary]
+
+        Args:
+            v ([type]): [description]
+        """
+        self.attributeCounts[AttributeOwner.PRIM] = value
+
+    @property
+    def detail_attrib_count(self):
+        """[summary]
+
+        Returns:
+            [type]: [description]
+        """
+        return self.attributeCounts[AttributeOwner.DETAIL]
+
+    @detail_attrib_count.setter
+    def detail_attrib_count(self, value):
+        """[summary]
+
+        Args:
+            v ([type]): [description]
+        """
+        self.attributeCounts[AttributeOwner.DETAIL] = value
+
+
+class CurveInfo(StructureWithEnums):
+    """Equivalent of HAPI's HAPI_CurveInfo
+
+    Args:
+        StructureWithEnums ([type]): [description]
+    """
+    _fields_ = [('curveType', c_int32),
                 ('curveCount', c_int32),
                 ('vertexCount', c_int32),
                 ('knotCount', c_int32),
@@ -432,11 +632,15 @@ class HAPI_CurveInfo(StructureWithEnums):
                 ('order', c_int32),
                 ('hasKnots', c_bool)]
     _map = {
-        "curveType":  HAPI_CurveType
+        "curveType":  CurveType
     }
 
+class AttributeInfo(StructureWithEnums):
+    """Equivalent of HAPI's HAPI_AttributeInfo
 
-class HAPI_AttributeInfo(StructureWithEnums): 
+    Args:
+        StructureWithEnums ([type]): [description]
+    """
     _fields_ = [('exists', c_bool),
                 ('owner', c_int32),
                 ('storage', c_int32),
@@ -445,48 +649,78 @@ class HAPI_AttributeInfo(StructureWithEnums):
                 ('tupleSize', c_int32),
                 ('typeInfo', c_int32)]
     _map = {
-        "owner": HAPI_AttributeOwner,
-        "storage": HAPI_StorageType,
-        "originalOwner": HAPI_AttributeOwner,
-        "typeInfo": HAPI_AttributeTypeInfo
+        "owner": AttributeOwner,
+        "storage": StorageType,
+        "originalOwner": AttributeOwner,
+        "typeInfo": AttributeTypeInfo
     }
+
 
 class SessionConnectionState(enum.IntEnum):
-    NOT_CONNECTED     = 0
-    CONNECTED         = 1
+    """[summary]
+
+    Args:
+        enum ([type]): [description]
+    """
+    NOT_CONNECTED = 0
+    CONNECTED = 1
     FAILED_TO_CONNECT = 2
 
-class HAPI_ThriftServerOptions(Structure):  
-    _fields_ = [('autoClose', c_bool),  
-                ('timeoutMs', c_float)]  
 
-class HAPI_Session(StructureWithEnums):  
-    _fields_ = [('type', c_int),  
+class ThriftServerOptions(Structure):
+    """Equivalent of HAPI's HAPI_ThriftServerOptions
+
+    Args:
+        Structure ([type]): [description]
+    """
+    _fields_ = [('autoClose', c_bool),
+                ('timeoutMs', c_float)]
+
+
+class Session(StructureWithEnums):
+    """Equivalent of HAPI's HAPI_Session
+
+    Args:
+        StructureWithEnums ([type]): [description]
+    """
+    _fields_ = [('type', c_int),
                 ('id', c_int64)]
     _map = {
-         "type":  HAPI_SessionType
+        "type":  SessionType
     }
 
-class HAPI_AssetInfo(Structure):  
-    _fields_ = [('nodeId', c_int32),  
-                ('objectNodeId', c_int32),  
-                ('hasEverCooked', c_bool),  
-                ('nameSH', c_int32),  
-                ('labelSH', c_int32),  
-                ('filePathSH ', c_int32),  
-                ('versionSH', c_int32),  
-                ('fullOpNameSH', c_int32),  
-                ('helpTextSH', c_int32),  
-                ('helpURLSH', c_int32),  
-                ('objectCount', c_int32),  
-                ('handleCount', c_int32),  
-                ('transformInputCount', c_int32),  
-                ('geoInputCount', c_int32),  
-                ('geoOutputCount', c_int32),  
-                ('haveObjectsChanged', c_int32),  
-                ('haveMaterialsChanged', c_int32)]  
 
-class HAPI_ObjectInfo(Structure):
+class AssetInfo(Structure):
+    """Equivalent of HAPI's HAPI_AssetInfo
+
+    Args:
+        Structure ([type]): [description]
+    """
+    _fields_ = [('nodeId', c_int32),
+                ('objectNodeId', c_int32),
+                ('hasEverCooked', c_bool),
+                ('nameSH', c_int32),
+                ('labelSH', c_int32),
+                ('filePathSH ', c_int32),
+                ('versionSH', c_int32),
+                ('fullOpNameSH', c_int32),
+                ('helpTextSH', c_int32),
+                ('helpURLSH', c_int32),
+                ('objectCount', c_int32),
+                ('handleCount', c_int32),
+                ('transformInputCount', c_int32),
+                ('geoInputCount', c_int32),
+                ('geoOutputCount', c_int32),
+                ('haveObjectsChanged', c_int32),
+                ('haveMaterialsChanged', c_int32)]
+
+
+class ObjectInfo(Structure):
+    """Equivalent of HAPI's HAPI_ObjectInfo
+
+    Args:
+        Structure ([type]): [description]
+    """
     _fields_ = [('nameSH', c_int32),
                 ('objectInstancePathSH', c_int32),
                 ('hasTransformChanged', c_bool),
@@ -498,7 +732,13 @@ class HAPI_ObjectInfo(Structure):
                 ('nodeId', c_int32),
                 ('objectToInstanceId', c_int32)]
 
-class HAPI_GeoInfo(StructureWithEnums):
+
+class GeoInfo(StructureWithEnums):
+    """Equivalent of HAPI's HAPI_GeoInfo
+
+    Args:
+        StructureWithEnums ([type]): [description]
+    """
     _fields_ = [('type', c_int32),
                 ('nameSH', c_int32),
                 ('nodeId', c_int32),
@@ -511,10 +751,16 @@ class HAPI_GeoInfo(StructureWithEnums):
                 ('primitiveGroupCount', c_int32),
                 ('partCount', c_int32)]
     _map = {
-        "type": HAPI_GeoType 
+        "type": HGeoType
     }
 
-class HAPI_CookOptions(Structure):
+
+class CookOptions(Structure):
+    """Equivalent of HAPI's HAPI_CookOptions
+
+    Args:
+        Structure ([type]): [description]
+    """
     _fields_ = [('splitGeosByGroup', c_bool),
                 ('splitGeosByAttribute', c_bool),
                 ('splitAttrSH', c_int32),
@@ -529,7 +775,13 @@ class HAPI_CookOptions(Structure):
                 ('checkPartChanges', c_bool),
                 ('extraFlags', c_int32)]
 
-class HAPI_NodeInfo(StructureWithEnums):
+
+class NodeInfo(StructureWithEnums):
+    """Equivalent of HAPI's HAPI_NodeInfo
+
+    Args:
+        StructureWithEnums ([type]): [description]
+    """
     _fields_ = [('id', c_int32),
                 ('parentId', c_int32),
                 ('nameSH', c_int32),
@@ -549,10 +801,19 @@ class HAPI_NodeInfo(StructureWithEnums):
                 ('createdPostAssetLoad', c_bool),
                 ('isTimeDependent', c_bool)]
     _map = {
-        "type": HAPI_NodeType
+        "type": NodeType
     }
 
-class HAPI_ParmInfo(StructureWithEnums):
+
+class ParmInfo(StructureWithEnums):
+    """Equivalent of HAPI's HAPI_ParmInfo
+
+    Args:
+        StructureWithEnums ([type]): [description]
+
+    Returns:
+        [type]: [description]
+    """
     _fields_ = [('id', c_int32),
                 ('parentId', c_int32),
                 ('childIndex', c_int32),
@@ -596,41 +857,70 @@ class HAPI_ParmInfo(StructureWithEnums):
                 ('visibilityConditionSH', c_int32),
                 ('disabledConditionSH', c_int32)]
     _map = {
-        "type": HAPI_ParmType,
-        "scriptType" : HAPI_PrmScriptType,
-        "permissions" : HAPI_Permissions,
-        "choiceListType" : HAPI_ChoiceListType,
-        "inputNodeType" : HAPI_NodeType,
-        "inputNodeFlag" : HAPI_NodeFlags,
-        "rampType" : HAPI_RampType
+        "type": ParmType,
+        "scriptType": PrmScriptType,
+        "permissions": Permissions,
+        "choiceListType": ChoiceListType,
+        "inputNodeType": NodeType,
+        "inputNodeFlag": NodeFlags,
+        "rampType": RampType
     }
 
-    def IsInt(self):
-        return (self.type >= HAPI_ParmType.HAPI_PARMTYPE_INT_START and\
-            self.type <= HAPI_ParmType.HAPI_PARMTYPE_INT_END)\
-            or self.type == HAPI_ParmType.HAPI_PARMTYPE_MULTIPARMLIST\
-            or self.type == HAPI_ParmType.HAPI_PARMTYPE_FOLDERLIST_RADIO
+    def is_int(self):
+        """[summary]
 
+        Returns:
+            [type]: [description]
+        """
+        return (self.type >= ParmType.INT_START and
+                self.type <= ParmType.INT_END)\
+            or self.type == ParmType.MULTIPARMLIST\
+            or self.type == ParmType.FOLDERLIST_RADIO
 
-    def isFloat(self):
-        return self.type >= HAPI_ParmType.HAPI_PARMTYPE_FLOAT_START and\
-            self.type <= HAPI_ParmType.HAPI_PARMTYPE_FLOAT_END
+    def is_float(self):
+        """[summary]
 
-    def isString(self):
-        return (self.type >= HAPI_ParmType.HAPI_PARMTYPE_STRING_START and\
-                self.type <= HAPI_ParmType.HAPI_PARMTYPE_STRING_END)\
-                or self.type == HAPI_ParmType.HAPI_PARMTYPE_LABEL\
-                or self.type == HAPI_ParmType.HAPI_PARMTYPE_PATH_FILE_DIR
+        Returns:
+            [type]: [description]
+        """
+        return self.type >= ParmType.FLOAT_START and\
+            self.type <= ParmType.FLOAT_END
 
-    def isPath(self):
-        return (self.type >= HAPI_ParmType.HAPI_PARMTYPE_PATH_START and\
-                self.type <= HAPI_ParmType.HAPI_PARMTYPE_PATH_END)\
-                or self.type == HAPI_ParmType.HAPI_PARMTYPE_PATH_FILE_DIR
+    def is_string(self):
+        """[summary]
 
-    def isNode(self):
-        return self.type >= HAPI_ParmType.HAPI_PARMTYPE_NODE_START and\
-                self.type <= HAPI_ParmType.HAPI_PARMTYPE_NODE_END
+        Returns:
+            [type]: [description]
+        """
+        return (self.type >= ParmType.STRING_START and
+                self.type <= ParmType.STRING_END)\
+            or self.type == ParmType.LABEL\
+            or self.type == ParmType.PATH_FILE_DIR
 
-    def isNonValue(self):
-        return self.type >= HAPI_ParmType.HAPI_PARMTYPE_NONVALUE_START and\
-                self.type <= HAPI_ParmType.HAPI_PARMTYPE_NONVALUE_END
+    def is_path(self):
+        """[summary]
+
+        Returns:
+            [type]: [description]
+        """
+        return (self.type >= ParmType.PATH_START and
+                self.type <= ParmType.PATH_END)\
+            or self.type == ParmType.PATH_FILE_DIR
+
+    def is_node(self):
+        """[summary]
+
+        Returns:
+            [type]: [description]
+        """
+        return self.type >= ParmType.NODE_START and\
+            self.type <= ParmType.NODE_END
+
+    def is_non_value(self):
+        """[summary]
+
+        Returns:
+            [type]: [description]
+        """
+        return self.type >= ParmType.NONVALUE_START and\
+            self.type <= ParmType.NONVALUE_END

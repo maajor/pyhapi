@@ -20,7 +20,7 @@ class HGeo():
     def __init__(self):
         """Summary
         """
-        self.part_info = HDATA.HAPI_PartInfo()
+        self.part_info = HDATA.PartInfo()
         self.point_count = 0
         self.vertex_count = 0
         self.face_count = 0
@@ -28,10 +28,10 @@ class HGeo():
         self.attribs = {}
 
         self.type_to_add_attrib = {
-            HDATA.AttributeType.VERTEX: self.add_vertex_attrib,
-            HDATA.AttributeType.POINT: self.add_point_attrib,
-            HDATA.AttributeType.PRIM: self.add_prim_attrib,
-            HDATA.AttributeType.DETAIL: self.add_detail_attrib}
+            HDATA.AttributeOwner.VERTEX: self.add_vertex_attrib,
+            HDATA.AttributeOwner.POINT: self.add_point_attrib,
+            HDATA.AttributeOwner.PRIM: self.add_prim_attrib,
+            HDATA.AttributeOwner.DETAIL: self.add_detail_attrib}
 
     def add_attrib(self, attrib_type, name, data):
         """[summary]
@@ -58,16 +58,16 @@ class HGeo():
             print("AddPointAttrib Error, Data length {0} not compatible with point count {1}".\
                 format(count, self.point_count))
             return
-        attrib_info = HDATA.HAPI_AttributeInfo()
+        attrib_info = HDATA.AttributeInfo()
         attrib_info.count = count
         attrib_info.tupleSize = tuple_size
         attrib_info.exists = True
         attrib_info.storage = HDATA.NP_TYPE_TO_HSTORAGE_TYPE[data.dtype]
-        attrib_info.owner = HDATA.HAPI_AttributeOwner.HAPI_ATTROWNER_POINT
-        self.part_info.pointAttribCount += 1
+        attrib_info.owner = HDATA.AttributeOwner.POINT
+        self.part_info.point_attrib_count += 1
 
         #self.Attribs.append((attribInfo, name, data))
-        self.attribs[(HDATA.HAPI_AttributeOwner.HAPI_ATTROWNER_POINT, name)] = (
+        self.attribs[(HDATA.AttributeOwner.POINT, name)] = (
             attrib_info, name, data)
 
     def add_vertex_attrib(self, name, data):
@@ -85,16 +85,16 @@ class HGeo():
             print("AddVertexAttrib Error, Data length {0} not compatible with vertex count {1}".\
                 format(count, self.vertex_count))
             return
-        attrib_info = HDATA.HAPI_AttributeInfo()
+        attrib_info = HDATA.AttributeInfo()
         attrib_info.count = count
         attrib_info.tupleSize = tuple_size
         attrib_info.exists = True
         attrib_info.storage = HDATA.NP_TYPE_TO_HSTORAGE_TYPE[data.dtype]
-        attrib_info.owner = HDATA.HAPI_AttributeOwner.HAPI_ATTROWNER_VERTEX
-        self.part_info.vertexAttribCount += 1
+        attrib_info.owner = HDATA.AttributeOwner.VERTEX
+        self.part_info.vertex_attrib_count += 1
 
         #self.Attribs.append((attribInfo, name, data))
-        self.attribs[(HDATA.HAPI_AttributeOwner.HAPI_ATTROWNER_VERTEX, name)] = (
+        self.attribs[(HDATA.AttributeOwner.VERTEX, name)] = (
             attrib_info, name, data)
 
     def add_prim_attrib(self, name, data):
@@ -112,16 +112,16 @@ class HGeo():
             print("AddPrimAttrib Error, Data length {0} not compatible with prim count {1}".\
                 format(count, self.face_count))
             return
-        attrib_info = HDATA.HAPI_AttributeInfo()
+        attrib_info = HDATA.AttributeInfo()
         attrib_info.count = count
         attrib_info.tupleSize = tuple_size
         attrib_info.exists = True
         attrib_info.storage = HDATA.NP_TYPE_TO_HSTORAGE_TYPE[data.dtype]
-        attrib_info.owner = HDATA.HAPI_AttributeOwner.HAPI_ATTROWNER_PRIM
-        self.part_info.primAttribCount += 1
+        attrib_info.owner = HDATA.AttributeOwner.PRIM
+        self.part_info.prim_attrib_count += 1
 
         #self.Attribs.append((attribInfo, name, data))
-        self.attribs[(HDATA.HAPI_AttributeOwner.HAPI_ATTROWNER_PRIM, name)] = (
+        self.attribs[(HDATA.AttributeOwner.PRIM, name)] = (
             attrib_info, name, data)
 
     def add_detail_attrib(self, name, data):
@@ -136,16 +136,16 @@ class HGeo():
             print("add_detail_attrib Error, Data length {0} not compatible with detail count {1}".\
                 format(count, self.detail_count))
             return
-        attrib_info = HDATA.HAPI_AttributeInfo()
+        attrib_info = HDATA.AttributeInfo()
         attrib_info.count = count
         attrib_info.tupleSize = tuple_size
         attrib_info.exists = True
         attrib_info.storage = HDATA.NP_TYPE_TO_HSTORAGE_TYPE[data.dtype]
-        attrib_info.owner = HDATA.HAPI_AttributeOwner.HAPI_ATTROWNER_DETAIL
-        self.part_info.detailAttribCount += 1
+        attrib_info.owner = HDATA.AttributeOwner.DETAIL
+        self.part_info.detail_attrib_count += 1
 
         #self.Attribs.append((attribInfo, name, data))
-        self.attribs[(HDATA.HAPI_AttributeOwner.HAPI_ATTROWNER_DETAIL, name)] = (
+        self.attribs[(HDATA.AttributeOwner.DETAIL, name)] = (
             attrib_info, name, data)
 
     def get_attrib_data(self, attrib_type, name):
@@ -170,7 +170,7 @@ class HGeo():
         attrib_names = []
         for k, _ in self.attribs.items():
             attrib_type, name = k
-            attrib_names.append([name, HDATA.AttributeType(attrib_type)])
+            attrib_names.append([name, HDATA.AttributeOwner(attrib_type)])
         return attrib_names
 
     def commit_to_node(self, session, node_id):
@@ -185,7 +185,7 @@ class HGeo():
 
         for attrib_info, name, data in self.attribs.values():
             HAPI.AddAttribute(session.hapi_session, node_id, name, attrib_info)
-            HAPI.StorageTypeToSetAttrib[attrib_info.storage](
+            HAPI.STORAGE_TYPE_TO_SET_ATTRIB[attrib_info.storage](
                 session.hapi_session, node_id, name, attrib_info, data)
 
 
@@ -214,12 +214,12 @@ class HGeoMesh(HGeo):
             self.face_count = faces.shape[0]
             self.faces = faces
 
-            self.part_info.type = HDATA.HAPI_PartType.HAPI_PARTTYPE_MESH
+            self.part_info.type = HDATA.PartType.MESH
             self.part_info.faceCount = self.face_count
             self.part_info.vertexCount = self.vertex_count
             self.part_info.pointCount = self.point_count
 
-            self.add_attrib(HDATA.AttributeType.POINT, "P", vertices)
+            self.add_attrib(HDATA.AttributeOwner.POINT, "P", vertices)
 
     def extract_from_sop(self, session, node_id, part_id):
         """[summary]
@@ -230,7 +230,7 @@ class HGeoMesh(HGeo):
             part_id ([type]): [description]
         """
         self.part_info = HAPI.GetPartInfo(session.hapi_session, node_id, part_id)
-        for attrib_type in range(0, HDATA.HAPI_AttributeOwner.HAPI_ATTROWNER_MAX):
+        for attrib_type in range(0, HDATA.AttributeOwner.MAX):
             attrib_names = HAPI.GetAttributeNames(
                 session.hapi_session,
                 node_id,
@@ -241,7 +241,7 @@ class HGeoMesh(HGeo):
                 if not attrib_name.startswith("__"):
                     attrib_info = HAPI.GetAttributeInfo(
                         session.hapi_session, node_id, part_id, attrib_name, attrib_type)
-                    data = HAPI.StorageTypeToGetAttrib[attrib_info.storage](
+                    data = HAPI.STORAGE_TYPE_TO_GET_ATTRIB[attrib_info.storage](
                         session.hapi_session, node_id, part_id, attrib_name, attrib_info)
                     self.attribs[(attrib_type, attrib_name)] = (
                         attrib_info, attrib_name, data)
@@ -270,7 +270,7 @@ class HGeoCurve(HGeo):
     """
 
     def __init__(self, vertices, curve_knots=None,\
-        is_periodic=False, order=4, curve_type=HDATA.HAPI_CurveType.HAPI_CURVETYPE_LINEAR):
+        is_periodic=False, order=4, curve_type=HDATA.CurveType.LINEAR):
         """Summary
 
         Args:
@@ -284,12 +284,12 @@ class HGeoCurve(HGeo):
         self.curve_knots = curve_knots
         self.curve_count = np.repeat(vertices.shape[0], 1)
 
-        self.part_info.type = HDATA.HAPI_PartType.HAPI_PARTTYPE_CURVE
+        self.part_info.type = HDATA.PartType.CURVE
         self.part_info.faceCount = self.face_count
         self.part_info.vertexCount = self.vertex_count
         self.part_info.pointCount = self.point_count
 
-        self.curve_info = HDATA.HAPI_CurveInfo()
+        self.curve_info = HDATA.CurveInfo()
         self.curve_info.curveType = curve_type
         self.curve_info.curveCount = 1
         self.curve_info.vertexCount = vertices.shape[0]
@@ -300,7 +300,7 @@ class HGeoCurve(HGeo):
         self.curve_info.hasKnots = isinstance(curve_knots, np.ndarray)
 
         #self.AddPointAttrib("P", vertices)
-        self.add_attrib(HDATA.AttributeType.POINT, "P", vertices)
+        self.add_attrib(HDATA.AttributeOwner.POINT, "P", vertices)
 
     def commit_to_node(self, session, node_id):
         """Summary

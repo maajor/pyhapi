@@ -86,8 +86,8 @@ class HNodeBase():
         try:
             HAPI.DeleteNode(self.session.hapi_session, self.node_id)
             self.instantiated = False
-        except Exception as e:
-            print(e)
+        except Exception as error:
+            print(error)
 
 
 class HNode(HNodeBase):
@@ -117,7 +117,8 @@ class HNode(HNodeBase):
         """Summary
         """
         self.node_info = HAPI.GetNodeInfo(self.session.hapi_session, self.node_id)
-        self.param_info = HAPI.GetParameters(self.session.hapi_session, self.node_id, self.node_info)
+        self.param_info = HAPI.GetParameters(\
+            self.session.hapi_session, self.node_id, self.node_info)
         self.param_id_dict = {}
         for i in range(0, self.node_info.parmCount):
             namesh = self.param_info[i].labelSH
@@ -162,7 +163,8 @@ class HNode(HNodeBase):
         if paraminfo.IsInt():
             return HAPI.SetParmIntValue(self.session.hapi_session, self.node_id, param_name, value)
         if paraminfo.isFloat():
-            return HAPI.SetParmFloatValue(self.session.hapi_session, self.node_id, param_name, value)
+            return HAPI.SetParmFloatValue(\
+                self.session.hapi_session, self.node_id, param_name, value)
         if paraminfo.isString():
             return HAPI.SetParamStringValue(self.session.hapi_session, self.node_id, paramid, value)
         return None
@@ -279,6 +281,6 @@ class HExistingNode(HNodeBase):
             self.node_info = HAPI.GetNodeInfo(self.session.hapi_session, self.node_id)
             self.name = HAPI.GetString(self.session.hapi_session, self.node_info.nameSH)
             self.instantiated = True
-        except Exception as e:
+        except Exception as error:
             self.instantiated = False
-            print(e)
+            print(error)
