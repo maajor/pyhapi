@@ -20,9 +20,9 @@ class HAsset():
         self.instantiated = False
         self.hda_path = hdapath
         self.session = session
-        asset_lib_id = HAPI.LoadAssetLibraryFromFile(
+        asset_lib_id = HAPI.load_asset_library_from_file(
             session.hapi_session, self.hda_path)
-        self.asset_names = HAPI.GetAvailableAssets(
+        self.asset_names = HAPI.get_available_assets(
             session.hapi_session, asset_lib_id)
 
     def instantiate(self, node_name="Node", operator_id=0):

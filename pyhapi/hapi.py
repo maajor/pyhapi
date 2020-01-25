@@ -1,9 +1,7 @@
-"""Summary
-
-Attributes
-----------
-StorageTypeToSetAttrib : TYPE
-    Description
+# -*- coding: utf-8 -*-
+"""Wrapper for HAPI's APIs.
+Author  : Maajor
+Email   : hello_myd@126.com
 """
 from ctypes import cdll, POINTER, c_int, c_int32, c_int64,\
     c_float, c_double, c_bool, byref, c_char_p, create_string_buffer
@@ -17,82 +15,65 @@ from . import hdata as HDATA
 HAPI_LIB = cdll.LoadLibrary("libHAPIL")
 
 
-def IsSessionValid(session):
-    """Summary
+def is_session_valid(session):
+    """Wrapper for HAPI_IsSessionValid
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
+    Checks whether the session identified by HAPI_Session::id \
+        is a valid session opened in the implementation \
+            identified by HAPI_Session::type.
 
-    Returns
-    -------
-    TYPE
-        Description
+    Args:
+        session (int64): session id
+
+    Returns:
+        bool: if the session is valid
     """
     result = HAPI_LIB.HAPI_IsSessionValid(byref(session))
     return result == HDATA.Result.SUCCESS
 
 
-def Cleanup(session):
-    """Summary
+def cleanup(session):
+    """Wrapper for HAPI_Cleanup
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
+    Clean up memory. \
+        This will unload all assets and you will need to call HAPI_Initialize() \
+            again to be able to use any HAPI methods again.
+
+    Args:
+        session (int64): session id
     """
     result = HAPI_LIB.HAPI_Cleanup(byref(session))
     assert result == HDATA.Result.SUCCESS,\
         "Cleanup Failed with {0}".format(HDATA.Result(result).name)
 
 
-def CloseSession(session):
-    """Summary
+def close_session(session):
+    """Wrapper for HAPI_CloseSession
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
+    Closes a session. If the session has been established using RPC, \
+        then the RPC connection is closed.
+
+    Args:
+        session (int64): session id
     """
     result = HAPI_LIB.HAPI_CloseSession(byref(session))
     assert result == HDATA.Result.SUCCESS,\
         "Close Session Failed with {0}".format(HDATA.Result(result).name)
 
+def start_thrift_named_pipe_server(server_options):
+    """Wrapper for HAPI_StartThriftNamedPipeServer
 
-def CreateInProcessSession(session):
-    '''
-    Attributes
-    ----------
-    session : HAPI_Session
+    Starts a Thrift RPC server process on the local host serving clients \
+    on a Windows named pipe or a Unix domain socket and waits for it to start serving. \
+        It is safe to create an RPC session using the specified pipe or \
+            socket after this call succeeds.
 
-    Returns
-    -------
-    bool: success
+    Args:
+        server_options (ThriftServerOptions): server's option for start
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    '''
-    return HAPI_LIB.HAPI_CreateInProcessSession(byref(session))
-
-
-def StartThriftNamedPipeServer(server_options):
-    '''
-    Attributes
-    ----------
-    serverOptions : HAPI_ThriftServerOptions
-
-    Returns
-    -------
-    int: process id if success
-
-    Parameters
-    ----------
-    serverOptions : TYPE
-        Description
-    '''
+    Returns:
+        int: session id
+    """
     processid = c_int32()
     result = HAPI_LIB.HAPI_StartThriftNamedPipeServer(
         byref(server_options), c_char_p("hapi".encode('utf-8')), byref(processid))
@@ -103,13 +84,14 @@ def StartThriftNamedPipeServer(server_options):
     return processid
 
 
-def CreateThriftNamedPipeSession(session):
-    '''
-    Parameters
-    ----------
-    session : HAPI_Session
-        Description
-    '''
+def create_thrift_named_pipe_session(session):
+    """Wrapper for HAPI_CreateThriftNamedPipeSession
+    Creates a Thrift RPC session using a Windows named 、
+    pipe or a Unix domain socket as transport.
+
+    Args:
+        session (int64): session id
+    """
     result = HAPI_LIB.HAPI_CreateThriftNamedPipeSession(
         byref(session), c_char_p("hapi".encode('utf-8')))
     assert result == HDATA.Result.SUCCESS,\
@@ -117,32 +99,60 @@ def CreateThriftNamedPipeSession(session):
             HDATA.Result(result).name)
 
 
-def Initialize(session, cook_option, use_cooking_thread=True,
-               cooking_thread_stack_size=-1, houdini_environment_files="",
-               otl_search_path="", dso_search_path="",
-               image_dso_search_path="", audio_dso_search_path=""):
-    '''
-    Parameters
-    ----------
-    session : HAPI_Session
-        Description
-    cookOption : bool
-        Description
-    use_cooking_thread : bool, optional
-        Description
-    cooking_thread_stack_size : TYPE, optional
-        Description
-    houdini_environment_files : str, optional
-        Description
-    otl_search_path : str, optional
-        Description
-    dso_search_path : str, optional
-        Description
-    image_dso_search_path : str, optional
-        Description
-    audio_dso_search_path : str, optional
-        Description
-    '''
+def initialize(session, cook_option, use_cooking_thread=True,\
+    cooking_thread_stack_size=-1, houdini_environment_files="",\
+    otl_search_path="", dso_search_path="",\
+    image_dso_search_path="", audio_dso_search_path=""):
+    """Wrapper for HAPI_Initialize
+
+    Create the asset manager, set up environment variables, \
+        and initialize the main Houdini scene. No license checking is during this step. \
+            Only when you try to load an asset library (OTL) do we actually check for licenses.
+
+    Args:
+        session (int64): session id
+        cook_option (CookOption): option for node cook
+        use_cooking_thread (bool, optional): Use a separate thread for cooking of assets.\
+             This allows for asynchronous cooking and larger stack size.. Defaults to True.
+        cooking_thread_stack_size (int, optional): Set the stack size of the cooking thread.\
+             Use -1 to set the stack size to the Houdini default. This value is in bytes. \
+                 Defaults to -1.
+        houdini_environment_files (str, optional): A list of paths,\
+             separated by a ";" on Windows and a ":" on Linux and Mac,\
+                  to .env files that follow the same syntax as the houdini.env file in Houdini's \
+                      user prefs folder.These will be applied after the default houdini.env file \
+                          and will overwrite the process' environment variable values. You an use \
+                              this to enforce a stricter environment when running engine. \
+                                  For more info, see: \
+                                      http://www.sidefx.com/docs/houdini/basics/config_env. \
+                                          Defaults to "".
+        otl_search_path (str, optional): The directory where OTLs are searched for. \
+            You can pass NULL here which will only use the default Houdini OTL search paths. \
+                You can also pass in multiple paths separated by a ";" on Windows and a ":" \
+                    on Linux and Mac. \
+                    If something other than NULL is passed the default Houdini search paths \
+                        will be appended to the end of the path string.. Defaults to "".
+        dso_search_path (str, optional): The directory where generic DSOs (custom plugins) \
+            are searched for. You can pass NULL here which will only use the default Houdini \
+                DSO search paths. \
+                You can also pass in multiple paths separated by a ";" on Windows and a ":" \
+                    on Linux and Mac. \
+                    If something other than NULL is passed the default Houdini search paths \
+                        will be appended to the end of the path string.. Defaults to "".
+        image_dso_search_path (str, optional): The directory where image DSOs (custom plugins) \
+            are searched for. \
+            You can pass NULL here which will only use the default Houdini DSO search paths. \
+                You can also pass in multiple paths separated by a ";" on Windows and a ":" \
+                    on Linux and Mac. If something other than NULL is passed the default Houdini \
+                        search paths will be appended to the end of the path string.. \
+                            Defaults to "".
+        audio_dso_search_path (str, optional): The directory where audio DSOs (custom plugins)\
+            are searched for. You can pass NULL here which will only use the default Houdini \
+                DSO search paths. You can also pass in multiple paths separated by a ";" \
+                    on Windows and a ":" on Linux and Mac. If something other than NULL \
+                        is passed the default Houdini search paths will be appended to \
+                            the end of the path string.. Defaults to "".
+    """
     result = HAPI_LIB.HAPI_Initialize(
         byref(session),
         byref(cook_option),
@@ -158,28 +168,22 @@ def Initialize(session, cook_option, use_cooking_thread=True,
         "Initialize Failed with {0}".format(HDATA.Result(result).name)
 
 
-def LoadAssetLibraryFromFile(session, file_path, allow_overwrite=True):
-    '''
-    Attributes
-    ----------
-    session : HAPI_Session
-    filePath : string
-    library_id : int
-    allow_overwrite : bool
+def load_asset_library_from_file(session, file_path, allow_overwrite=True):
+    """Wrapper for HAPI_LoadAssetLibraryFromFile
 
-    Returns
-    -------
-    int: asset library id if success
+    Loads a Houdini asset library (OTL) from a .otl file. \
+        It does NOT create anything inside the Houdini scene.
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    filePath : TYPE
-        Description
-    allow_overwrite : bool, optional
-        Description
-    '''
+    Args:
+        session (int64): The session of Houdini you are interacting with.
+        file_path (str): Absolute path to the .otl file.
+        allow_overwrite (bool, optional): With this true, if the library file being \
+            loaded contains asset definitions that have already been loaded they will \
+                overwrite the existing definitions. . Defaults to True.
+
+    Returns:
+        int: Newly loaded otl id to be used
+    """
     asset_lib_id = c_int32()
     result = HAPI_LIB.HAPI_LoadAssetLibraryFromFile(
         byref(session), c_char_p(file_path.encode('utf-8')),
@@ -190,24 +194,7 @@ def LoadAssetLibraryFromFile(session, file_path, allow_overwrite=True):
     return asset_lib_id
 
 
-def _GetAvailableAssetCount(session, asset_lib_id):
-    '''
-    Attributes
-    ----------
-    session : HAPI_Session
-    assetLibId : int
-
-    Returns
-    -------
-    int: asset count if success
-
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    assetLibId : TYPE
-        Description
-    '''
+def _get_available_asset_count(session, asset_lib_id):
     asset_count = c_int32()
     result = HAPI_LIB.HAPI_GetAvailableAssetCount(
         byref(session), asset_lib_id, byref(asset_count))
@@ -217,26 +204,22 @@ def _GetAvailableAssetCount(session, asset_lib_id):
     return asset_count
 
 
-def GetAvailableAssets(session, asset_lib_id):
-    '''
-    Attributes
-    ----------
-    session : HAPI_Session
-    assetLibId : int
-    assetCount : int
+def get_available_assets(session, asset_lib_id):
+    """Get the names of the assets contained in an asset library.
+    The asset names will contain additional information about the type of asset, \
+        namespace, and version, along with the actual asset name. \
+            For example, if you have an Object type asset, in the "hapi" namespace, \
+                of version 2.0, named "foo", the asset name returned here \
+                    will be: hapi::Object/foo::2.0
 
-    Returns
-    -------
-    string[]: asset names if success
+    Args:
+        session (int64): The session of Houdini you are interacting with.
+        asset_lib_id (int): Newly loaded otl id to be used
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    assetLibId : TYPE
-        Description
-    '''
-    asset_count = _GetAvailableAssetCount(session, asset_lib_id)
+    Returns:
+        list(str): names of available assets name
+    """
+    asset_count = _get_available_asset_count(session, asset_lib_id)
 
     asset_string_buffer = (c_int32 * asset_count.value)()
 
@@ -247,27 +230,30 @@ def GetAvailableAssets(session, asset_lib_id):
             HDATA.Result(result).name)
 
     asset_names = []
-    for i in range(0, len(asset_string_buffer)):
-        asset_name = GetString(session, asset_string_buffer[i])
+    for buffer in asset_string_buffer:
+        asset_name = get_string(session, buffer)
         asset_names.append(asset_name)
 
     return asset_names
 
 
-def CreateInputNode(session, node_label):
-    """Summary
+def create_input_node(session, node_label):
+    """Wrapper for HAPI_CreateInputNode
+    Creates a simple geometry SOP node that can accept geometry input.
+    This will create a dummy OBJ node with a Null SOP inside that you can set
+    the geometry of using the geometry SET APIs.
+    You can then connect this node to any other node as a geometry input.
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    node_label : TYPE
-        Description
+    Args:
+        session (int64): The session of Houdini you are interacting with.
+        node_label ( str): Give this input node a name for easy debugging. \
+            The node's parent OBJ node and the Null SOP node will both get \
+                this given name with "input_" prepended. You can also pass \
+                    NULL in which case the name will be "input#" where # is \
+                    some number.
 
-    Returns
-    -------
-    TYPE
-        Description
+    Returns:
+        int : Newly created node's id
     """
     node_id = c_int32()
     result = HAPI_LIB.HAPI_CreateInputNode(
@@ -278,33 +264,22 @@ def CreateInputNode(session, node_label):
     return node_id.value
 
 
-def CreateNode(session, operator_name, node_label, parent_node_id=-1, cook_on_creation=False):
-    '''
-    Attributes
-    ----------
-    session : HAPI_Session
-    operator_name: string
-    node_label : string
-    parent_node_id : int
-    cook_on_creation : bool
+def create_node(session, operator_name, node_label="", parent_node_id=-1, cook_on_creation=False):
+    """Wrapper for HAPI_CreateNode
+    Create a node inside a node network. \
+        Nodes created this way will have their HAPI_NodeInfo::createdPostAssetLoad \
+            set to true.
 
-    Returns
-    -------
-    int: node id if success
+    Args:
+        session (int64): The session of Houdini you are interacting with.
+        operator_name (str): The name of the node operator type.
+        node_label (str, optional): The label of the newly created node. Defaults to "".
+        parent_node_id (int, optional): [description]. Defaults to -1.
+        cook_on_creation (bool, optional): [description]. Defaults to False.
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    operator_name : TYPE
-        Description
-    node_label : TYPE
-        Description
-    parent_node_id : TYPE, optional
-        Description
-    cook_on_creation : bool, optional
-        Description
-    '''
+    Returns:
+        int: The returned node id of the just-created node.
+    """
     node_id = c_int32()
     result = HAPI_LIB.HAPI_CreateNode(
         byref(session), c_int(parent_node_id), c_char_p(
@@ -315,98 +290,72 @@ def CreateNode(session, operator_name, node_label, parent_node_id=-1, cook_on_cr
     return node_id.value
 
 
-def DeleteNode(session, node_id):
-    '''
-    Attributes
-    ----------
-    session : HAPI_Session
-    operator_name: string
-    node_label : string
-    parent_node_id : int
-    cook_on_creation : bool
-
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    node_id : TYPE
-        Description
-
-    No Longer Returned
-    ------------------
-    int: node id if success
-    '''
+def delete_node(session, node_id):
+    """Wrapper for HAPI_DeleteNode
+    Delete a node from a node network.\
+         Only nodes with their HAPI_NodeInfo::createdPostAssetLoad \
+             set to true can be deleted this way.
+    Args:
+        session (int64): The session of Houdini you are interacting with.
+        node_id (int): The node to delete.
+    """
     result = HAPI_LIB.HAPI_DeleteNode(byref(session), node_id)
     assert result == HDATA.Result.SUCCESS,\
         "DeleteNode Failed with {0}".format(HDATA.Result(result).name)
 
 
-def CookNode(session, cook_option, node_id):
-    '''
-    Attributes
-    ----------
-    session : HAPI_Session
-    cook_option: HAPI_CookOptions
-    node_id : int
+def cook_node(session, cook_option, node_id):
+    """Wrapper for HAPI_CookNode, a sync/blocking call
+    Initiate a cook on this node. \
+        Note that this may trigger cooks on other nodes if they are connected.
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    cook_option : TYPE
-        Description
-    node_id : TYPE
-        Description
-
-    No Longer Returned
-    ------------------
-    int: node id if success
-    '''
+    Args:
+        session (int64): The session of Houdini you are interacting with.
+        cook_option (CookOption): option for node cook
+        node_id (int): The node to cook.
+    """
     result = HAPI_LIB.HAPI_CookNode(
         byref(session), node_id, byref(cook_option))
     assert result == HDATA.Result.SUCCESS,\
         "CookNode Failed with {0}".format(HDATA.Result(result).name)
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(WaitCook(session))
+    loop.run_until_complete(wait_cook_async(session))
 
 
-async def CookNodeAsync(session, cook_option, node_id):
-    '''
-    Attributes
-    ----------
-    session : HAPI_Session
-    cook_option: HAPI_CookOptions
-    node_id : int
+async def cook_node_async(session, cook_option, node_id):
+    """Wrapper for HAPI_CookNode, an async call
+    Initiate a cook on this node. \
+        Note that this may trigger cooks on other nodes if they are connected.
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    cook_option : TYPE
-        Description
-    node_id : TYPE
-        Description
-
-    No Longer Returned
-    ------------------
-    int: node id if success
-    '''
+    Args:
+        session (int64): The session of Houdini you are interacting with.
+        cook_option (CookOption): option for node cook
+        node_id (int): The node to cook.
+    """
     result = HAPI_LIB.HAPI_CookNode(
         byref(session), node_id, byref(cook_option))
     assert result == HDATA.Result.SUCCESS,\
         "CookNodeAsync Failed with {0}".format(HDATA.Result(result).name)
-    await WaitCook(session)
+    await wait_cook_async(session)
 
+def wait_cook(session, status_report_interval=1):
+    """An sync call to wait for cooking return result
 
-async def WaitCook(session, status_report_interval=1):
-    """Summary
+    Args:
+        session (int64): The session of Houdini you are interacting with.
+        status_report_interval (int, optional): time interval in seconds to query cook status. \
+            Defaults to 1.
+    """
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(wait_cook_async(session, status_report_interval))
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    statusReportInterval : int, optional
-        Description
+async def wait_cook_async(session, status_report_interval=1):
+    """An async call to wait for cooking return result
+
+    Args:
+        session (int64): The session of Houdini you are interacting with.
+        status_report_interval (int, optional): time interval in seconds to query cook status. \
+            Defaults to 1.
     """
     print("-------------Start Cooking!---------------")
     cook_status = c_int32()
@@ -417,14 +366,14 @@ async def WaitCook(session, status_report_interval=1):
         continuestate = cook_status.value > HDATA.State.MAX_READY_STATE\
             and cook_result == HDATA.Result.SUCCESS
         print("Cook Status at {0} : {1}".format(datetime.now().\
-            strftime('%H:%M:%S'), _GetStatusString(session,\
+            strftime('%H:%M:%S'), _get_status_string(session,\
                 HDATA.StatusType.COOK_STATE,\
                     HDATA.StatusVerbosity.MESSAGES)))
         if not continuestate:
             break
         await asyncio.sleep(status_report_interval)
     if cook_status.value == HDATA.State.READY_WITH_FATAL_ERRORS:
-        print("Cook with Fatal Error: {0}".format(_GetStatusString(session)))
+        print("Cook with Fatal Error: {0}".format(_get_status_string(session)))
     print("-------------Finish Cooking!---------------")
     assert cook_result == HDATA.Result.SUCCESS and\
         cook_status.value == HDATA.State.READY,\
@@ -432,17 +381,17 @@ async def WaitCook(session, status_report_interval=1):
         format(HDATA.Result(cook_result).name,
                HDATA.State(cook_status.value).name)
 
-
-def QueryNodeInput(session, node_id, input_index=0):
-    """[summary]
+def query_node_input(session, node_id, input_index=0):
+    """Wrapper for HAPI_QueryNodeInput
+    Query which node is connected to another node's input.
 
     Args:
-        session ([type]): [description]
-        node_id ([type]): [description]
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to cook.
         input_index (int, optional): [description]. Defaults to 0.
 
     Returns:
-        [type]: [description]
+        int: The node id of connection
     """
     connect_node_id = c_int32()
     result = HAPI_LIB.HAPI_QueryNodeInput(
@@ -452,15 +401,16 @@ def QueryNodeInput(session, node_id, input_index=0):
     return connect_node_id.value
 
 
-def ConnectNodeInput(session, node_id, node_id_to_connect, input_index=0, output_index=0):
-    """[summary]
+def connect_node_input(session, node_id, node_id_to_connect, input_index=0, output_index=0):
+    """Wrapper for HAPI_ConnectNodeInput
+    Connect two nodes together.
 
     Args:
-        session ([type]): [description]
-        node_id ([type]): [description]
-        node_id_to_connect ([type]): [description]
-        input_index (int, optional): [description]. Defaults to 0.
-        output_index (int, optional): [description]. Defaults to 0.
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to connect.
+        node_id_to_connect (int): The node to connect to node_id's input.
+        input_index (int, optional): The input index. Defaults to 0.
+        output_index (int, optional): The output index. Defaults to 0.
     """
     result = HAPI_LIB.HAPI_ConnectNodeInput(
         byref(session), c_int(node_id), c_int(input_index),
@@ -470,13 +420,14 @@ def ConnectNodeInput(session, node_id, node_id_to_connect, input_index=0, output
             HDATA.Result(result).name)
 
 
-def DisconnectNodeInput(session, node_id, input_index=0):
-    """[summary]
+def disconnect_node_input(session, node_id, input_index=0):
+    """Wrapper for HAPI_DisconnectNodeInput
+    Disconnect a node input.
 
     Args:
-        session ([type]): [description]
-        node_id ([type]): [description]
-        input_index (int, optional): [description]. Defaults to 0.
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to disconnect.
+        input_index (int, optional): The input index to disconnect. Defaults to 0.
     """
     result = HAPI_LIB.HAPI_DisconnectNodeInput(
         byref(session), c_int(node_id), c_int(input_index))
@@ -485,16 +436,17 @@ def DisconnectNodeInput(session, node_id, input_index=0):
             HDATA.Result(result).name)
 
 
-def GetComposedChildNodeList(session, node_id, count):
-    """[summary]
+def get_composed_child_node_list(session, node_id, count):
+    """Wrapper for HAPI_GetComposedChildNodeList
+    Get the composed list of child node ids from the previous call to HAPI_ComposeChildNodeList().
 
     Args:
-        session ([type]): [description]
-        node_id ([type]): [description]
-        count ([type]): [description]
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        count (int): The number of children in the composed list
 
     Returns:
-        [type]: [description]
+        list(int): The array of node id for the child nodes.
     """
     id_buffer = (c_int32 * count)()
     result = HAPI_LIB.HAPI_GetComposedChildNodeList(
@@ -505,27 +457,19 @@ def GetComposedChildNodeList(session, node_id, count):
     return id_buffer
 
 
-def ComposeChildNodeList(session, node_id,
-                         node_type=HDATA.NodeFlags.ANY,
-                         node_flag=HDATA.NodeFlags.ANY):
-    '''
-    Attributes
-    ----------
-    session : HAPI_Session
-    node_id : int
+def compose_child_node_list(session, node_id, node_type=HDATA.NodeType.ANY,\
+    node_flag=HDATA.NodeFlags.ANY):
+    """Wrapper for HAPI_ComposeChildNodeList
+    Compose a list of child nodes based on given filters.
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    node_id : TYPE
-        Description
-
-    Returns
-    -------
-    TYPE
-        Description
-    '''
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        node_type (NodeType, optional): The node type by which to filter the children. \
+            Defaults to HDATA.NodeType.ANY.
+        node_flag (NodeFlags, optional): The node flags by which to filter the children. \
+            Defaults to HDATA.NodeFlags.ANY.
+    """
     child_count = c_int32()
     result = HAPI_LIB.HAPI_ComposeChildNodeList(
         byref(session), node_id, c_int(node_type), c_int(node_flag),
@@ -536,15 +480,20 @@ def ComposeChildNodeList(session, node_id,
     return child_count.value
 
 
-def GetDisplayGeoInfo(session, node_id):
-    """[summary]
+def get_display_geo_info(session, node_id):
+    """Wrapper for HAPI_GetDisplayGeoInfo
+    Get the display geo (SOP) node inside an Object node. \
+        If there there are multiple display SOP nodes, only the first one is returned. \
+            If the node is a display SOP itself, even if a network, \
+                it will return its own geo info. If the node is a SOP \
+                    but not a network and not the display SOP, this function will fail.
 
     Args:
-        session ([type]): [description]
-        node_id ([type]): [description]
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
 
     Returns:
-        [type]: [description]
+        GeoInfo: the geoinfo of queried node
     """
     geo_info = HDATA.GeoInfo()
     result = HAPI_LIB.HAPI_GetDisplayGeoInfo(
@@ -555,16 +504,17 @@ def GetDisplayGeoInfo(session, node_id):
     return geo_info
 
 
-def GetPartInfo(session, node_id, part_id):
-    """[summary]
+def get_part_info(session, node_id, part_id):
+    """Wrapper for HAPI_GetPartInfo
+    Get a particular part info struct.
 
     Args:
-        session ([type]): [description]
-        node_id ([type]): [description]
-        part_id ([type]): [description]
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        part_id (int): The part id.
 
     Returns:
-        [type]: [description]
+        PartInfo: the partinfo of queried node
     """
     part_info = HDATA.PartInfo()
     result = HAPI_LIB.HAPI_GetPartInfo(
@@ -574,16 +524,17 @@ def GetPartInfo(session, node_id, part_id):
     return part_info
 
 
-def GetComposedObjectList(session, node_id, count):
-    """[summary]
+def get_composed_object_list(session, node_id, count):
+    """Wrapper for HAPI_GetComposedObjectList
+    Fill an array of HAPI_ObjectInfo structs.
 
     Args:
-        session ([type]): [description]
-        node_id ([type]): [description]
-        count ([type]): [description]
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        count (int): The number of children in the list
 
     Returns:
-        [type]: [description]
+        list(ObjectInfo): Array of ObjectInfo of querying
     """
     object_info_buffer = (HDATA.ObjectInfo * count)()
     result = HAPI_LIB.HAPI_GetComposedObjectList(
@@ -595,25 +546,17 @@ def GetComposedObjectList(session, node_id, count):
     return object_info_buffer
 
 
-def ComposeObjectList(session, node_id):
-    '''
-    Attributes
-    ----------
-    session : HAPI_Session
-    node_id : int
+def compose_object_list(session, node_id):
+    """Wrapper for HAPI_ComposeObjectList
+    Compose a list of child object nodes given a parent node id.
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    node_id : TYPE
-        Description
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
 
-    Returns
-    -------
-    TYPE
-        Description
-    '''
+    Returns:
+        int: child count of querying node
+    """
     child_count = c_int32()
     result = HAPI_LIB.HAPI_ComposeObjectList(
         byref(session), node_id, None, byref(child_count))
@@ -623,20 +566,16 @@ def ComposeObjectList(session, node_id):
     return child_count.value
 
 
-def GetNodeInfo(session, node_id):
-    """Summary
+def get_node_info(session, node_id):
+    """Wrapper for HAPI_GetNodeInfo
+    Fill an NodeInfo struct.
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    node_id : TYPE
-        Description
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
 
-    Returns
-    -------
-    TYPE
-        Description
+    Returns:
+        NodeInfo: NodeInfo of querying node
     """
     node_info = HDATA.NodeInfo()
     result = HAPI_LIB.HAPI_GetNodeInfo(
@@ -646,20 +585,16 @@ def GetNodeInfo(session, node_id):
     return node_info
 
 
-def GetAssetInfo(session, node_id):
-    """Summary
+def get_asset_info(session, node_id):
+    """Wrapper for HAPI_GetAssetInfo
+    Fill an AssetInfo struct from a node.
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    node_id : TYPE
-        Description
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
 
-    Returns
-    -------
-    TYPE
-        Description
+    Returns:
+        AssetInfo: AssetInfo of querying node
     """
     asset_info = HDATA.AssetInfo()
     result = HAPI_LIB.HAPI_GetAssetInfo(
@@ -669,22 +604,16 @@ def GetAssetInfo(session, node_id):
     return asset_info
 
 
-def GetParameters(session, node_id, node_info):
-    """Summary
+def get_parameters(session, node_id, node_info):
+    """[summary]
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    node_id : TYPE
-        Description
-    node_info : TYPE
-        Description
+    Args:
+        session ([type]): [description]
+        node_id ([type]): [description]
+        node_info ([type]): [description]
 
-    Returns
-    -------
-    TYPE
-        Description
+    Returns:
+        [type]: [description]
     """
     params = (HDATA.ParmInfo * node_info.parmCount)()
     result = HAPI_LIB.HAPI_GetParameters(
@@ -694,7 +623,7 @@ def GetParameters(session, node_id, node_info):
     return params
 
 
-def GetParmIntValue(session, node_id, parmname, tupleid=0):
+def get_param_int_value(session, node_id, parmname, tupleid=0):
     """Summary
 
     Parameters
@@ -722,7 +651,7 @@ def GetParmIntValue(session, node_id, parmname, tupleid=0):
     return val.value
 
 
-def GetParmFloatValue(session, node_id, parmname, tupleid=0):
+def get_param_float_value(session, node_id, parmname, tupleid=0):
     """Summary
 
     Parameters
@@ -750,7 +679,7 @@ def GetParmFloatValue(session, node_id, parmname, tupleid=0):
     return val.value
 
 
-def GetParamStringValue(session, node_id, parmname, tupleid=0):
+def get_param_string_value(session, node_id, parmname, tupleid=0):
     """Summary
 
     Parameters
@@ -775,10 +704,10 @@ def GetParamStringValue(session, node_id, parmname, tupleid=0):
     assert result == HDATA.Result.SUCCESS,\
         "GetParamStringValue Failed with {0}".format(
             HDATA.Result(result).name)
-    return GetString(session, stringsh)
+    return get_string(session, stringsh)
 
 
-def SetParmIntValue(session, node_id, parmname, value, tupleid=0):
+def set_param_int_value(session, node_id, parmname, value, tupleid=0):
     """Summary
 
     Parameters
@@ -806,7 +735,7 @@ def SetParmIntValue(session, node_id, parmname, value, tupleid=0):
             HDATA.Result(result).name)
 
 
-def SetParmFloatValue(session, node_id, parmname, value, tupleid=0):
+def set_param_float_value(session, node_id, parmname, value, tupleid=0):
     """Summary
 
     Parameters
@@ -834,7 +763,7 @@ def SetParmFloatValue(session, node_id, parmname, value, tupleid=0):
             HDATA.Result(result).name)
 
 
-def SetParamStringValue(session, node_id, parmid, value, tupleid=0):
+def set_param_string_value(session, node_id, parmid, value, tupleid=0):
     """Summary
 
     Parameters
@@ -862,7 +791,7 @@ def SetParamStringValue(session, node_id, parmid, value, tupleid=0):
             HDATA.Result(result).name)
 
 
-def SetPartInfo(session, node_id, part_info):
+def set_part_info(session, node_id, part_info):
     """Summary
 
     Parameters
@@ -885,7 +814,7 @@ def SetPartInfo(session, node_id, part_info):
         "SetPartInfo Failed with {0}".format(HDATA.Result(result).name)
 
 
-def SetCurveInfo(session, node_id, curve_info):
+def set_curve_info(session, node_id, curve_info):
     """[summary]
 
     Args:
@@ -899,7 +828,7 @@ def SetCurveInfo(session, node_id, curve_info):
         "SetCurveInfo Failed with {0}".format(HDATA.Result(result).name)
 
 
-def SetCurveCounts(session, node_id, part_id, curve_count):
+def set_curve_counts(session, node_id, part_id, curve_count):
     """[summary]
 
     Args:
@@ -916,7 +845,7 @@ def SetCurveCounts(session, node_id, part_id, curve_count):
         "SetCurveCounts Failed with {0}".format(HDATA.Result(result).name)
 
 
-def SetCurveKnots(session, node_id, part_id, curve_knots):
+def set_curve_knots(session, node_id, part_id, curve_knots):
     """[summary]
 
     Args:
@@ -936,7 +865,7 @@ def SetCurveKnots(session, node_id, part_id, curve_knots):
     return
 
 
-def AddAttribute(session, node_id, name, attrib_info):
+def add_attribute(session, node_id, name, attrib_info):
     """Summary
 
     Parameters
@@ -961,7 +890,7 @@ def AddAttribute(session, node_id, name, attrib_info):
         "AddAttribute Failed with {0}".format(HDATA.Result(result).name)
 
 
-def SetAttributeFloatData(session, node_id, name, attrib_info, data):
+def set_attribute_float_data(session, node_id, name, attrib_info, data):
     """Summary
 
     Parameters
@@ -991,7 +920,7 @@ def SetAttributeFloatData(session, node_id, name, attrib_info, data):
             HDATA.Result(result).name)
 
 
-def SetAttributeFloat64Data(session, node_id, name, attrib_info, data):
+def set_attribute_float64_data(session, node_id, name, attrib_info, data):
     """Summary
 
     Parameters
@@ -1021,7 +950,7 @@ def SetAttributeFloat64Data(session, node_id, name, attrib_info, data):
             HDATA.Result(result).name)
 
 
-def SetAttributeInt64Data(session, node_id, name, attrib_info, data):
+def set_attribute_int64_data(session, node_id, name, attrib_info, data):
     """Summary
 
     Parameters
@@ -1051,7 +980,7 @@ def SetAttributeInt64Data(session, node_id, name, attrib_info, data):
             HDATA.Result(result).name)
 
 
-def SetAttributeIntData(session, node_id, name, attrib_info, data):
+def set_attribute_int_data(session, node_id, name, attrib_info, data):
     """Summary
 
     Parameters
@@ -1081,7 +1010,7 @@ def SetAttributeIntData(session, node_id, name, attrib_info, data):
             HDATA.Result(result).name)
 
 
-def SetAttributeStringData(session, node_id, name, attrib_info, data):
+def set_attribute_string_data(session, node_id, name, attrib_info, data):
     """Summary
 
     Parameters
@@ -1112,15 +1041,15 @@ def SetAttributeStringData(session, node_id, name, attrib_info, data):
 
 
 STORAGE_TYPE_TO_SET_ATTRIB = {
-    HDATA.StorageType.INT: SetAttributeIntData,
-    HDATA.StorageType.INT64: SetAttributeInt64Data,
-    HDATA.StorageType.FLOAT: SetAttributeFloatData,
-    HDATA.StorageType.FLOAT64: SetAttributeFloat64Data,
-    HDATA.StorageType.STRING: SetAttributeStringData
+    HDATA.StorageType.INT: set_attribute_int_data,
+    HDATA.StorageType.INT64: set_attribute_int64_data,
+    HDATA.StorageType.FLOAT: set_attribute_float_data,
+    HDATA.StorageType.FLOAT64: set_attribute_float64_data,
+    HDATA.StorageType.STRING: set_attribute_string_data
 }
 
 
-def GetAttributeNames(session, node_id, part_info,\
+def get_attribute_names(session, node_id, part_info,\
     attrib_type=HDATA.AttributeOwner.POINT):
     """[summary]
 
@@ -1143,11 +1072,11 @@ def GetAttributeNames(session, node_id, part_info,\
             HDATA.Result(result).name)
     attrib_names = []
     for string_handle in string_handle_buffer:
-        attrib_names.append(GetString(session, string_handle))
+        attrib_names.append(get_string(session, string_handle))
     return attrib_names
 
 
-def GetAttributeInfo(session, node_id, part_id, name, attrib_type):
+def get_attribute_info(session, node_id, part_id, name, attrib_type):
     """[summary]
 
     Args:
@@ -1170,7 +1099,7 @@ def GetAttributeInfo(session, node_id, part_id, name, attrib_type):
     return attrib_info
 
 
-def GetAttributeIntData(session, node_id, part_id, name, attrib_info):
+def get_attribute_int_data(session, node_id, part_id, name, attrib_info):
     """[summary]
 
     Args:
@@ -1194,7 +1123,7 @@ def GetAttributeIntData(session, node_id, part_id, name, attrib_info):
     return np.reshape(data_np, (attrib_info.count, attrib_info.tupleSize))
 
 
-def GetAttributeInt64Data(session, node_id, part_id, name, attrib_info):
+def get_attribute_int64_data(session, node_id, part_id, name, attrib_info):
     """[summary]
 
     Args:
@@ -1218,7 +1147,7 @@ def GetAttributeInt64Data(session, node_id, part_id, name, attrib_info):
     return np.reshape(data_np, (attrib_info.count, attrib_info.tupleSize))
 
 
-def GetAttributeFloatData(session, node_id, part_id, name, attrib_info):
+def get_attribute_float_data(session, node_id, part_id, name, attrib_info):
     """[summary]
 
     Args:
@@ -1242,7 +1171,7 @@ def GetAttributeFloatData(session, node_id, part_id, name, attrib_info):
     return np.reshape(data_np, (attrib_info.count, attrib_info.tupleSize))
 
 
-def GetAttributeFloat64Data(session, node_id, part_id, name, attrib_info):
+def get_attribute_float64_data(session, node_id, part_id, name, attrib_info):
     """[summary]
 
     Args:
@@ -1266,7 +1195,7 @@ def GetAttributeFloat64Data(session, node_id, part_id, name, attrib_info):
     return np.reshape(data_np, (attrib_info.count, attrib_info.tupleSize))
 
 
-def GetAttributeStringData(session, node_id, part_id, name, attrib_info):
+def get_attribute_string_data(session, node_id, part_id, name, attrib_info):
     """[summary]
 
     Args:
@@ -1291,15 +1220,15 @@ def GetAttributeStringData(session, node_id, part_id, name, attrib_info):
 
 
 STORAGE_TYPE_TO_GET_ATTRIB = {
-    HDATA.StorageType.INT: GetAttributeIntData,
-    HDATA.StorageType.INT64: GetAttributeInt64Data,
-    HDATA.StorageType.FLOAT: GetAttributeFloatData,
-    HDATA.StorageType.FLOAT64: GetAttributeFloat64Data,
-    HDATA.StorageType.STRING: GetAttributeStringData
+    HDATA.StorageType.INT: get_attribute_int_data,
+    HDATA.StorageType.INT64: get_attribute_int64_data,
+    HDATA.StorageType.FLOAT: get_attribute_float_data,
+    HDATA.StorageType.FLOAT64: get_attribute_float64_data,
+    HDATA.StorageType.STRING: get_attribute_string_data
 }
 
 
-def SetVertexList(session, node_id, vertex_list_array):
+def set_vertex_list(session, node_id, vertex_list_array):
     """Summary
 
     Parameters
@@ -1324,7 +1253,7 @@ def SetVertexList(session, node_id, vertex_list_array):
         "SetVertexList Failed with {0}".format(HDATA.Result(result).name)
 
 
-def SetFaceCounts(session, node_id, face_counts_array):
+def set_face_counts(session, node_id, face_counts_array):
     """Summary
 
     Parameters
@@ -1349,7 +1278,7 @@ def SetFaceCounts(session, node_id, face_counts_array):
         "SetFaceCounts Failed with {0}".format(HDATA.Result(result).name)
 
 
-def CommitGeo(session, node_id):
+def commit_geo(session, node_id):
     """Summary
 
     Parameters
@@ -1364,7 +1293,7 @@ def CommitGeo(session, node_id):
         "CommitGeo Failed with {0}".format(HDATA.Result(result).name)
 
 
-def SaveHIPFile(session, hipname, lock_nodes=False):
+def save_hip_file(session, hipname, lock_nodes=False):
     '''
     Attributes
     ----------
@@ -1387,7 +1316,7 @@ def SaveHIPFile(session, hipname, lock_nodes=False):
         "SaveHIPFile Failed with {0}".format(HDATA.Result(result).name)
 
 
-def GetCookOptions():
+def get_cook_options():
     """Summary
 
     Returns
@@ -1410,7 +1339,7 @@ def GetCookOptions():
     return cook_options
 
 
-def _GetStringBufLength(session, string_handle, buffer_length):
+def _get_string_buf_length(session, string_handle, buffer_length):
     """Summary
 
     Parameters
@@ -1430,7 +1359,7 @@ def _GetStringBufLength(session, string_handle, buffer_length):
     return HAPI_LIB.HAPI_GetStringBufLength(byref(session), string_handle, byref(buffer_length))
 
 
-def _GetString(session, string_handle, string, length):
+def _get_string(session, string_handle, string, length):
     """Summary
 
     Parameters
@@ -1452,7 +1381,7 @@ def _GetString(session, string_handle, string, length):
     return HAPI_LIB.HAPI_GetString(byref(session), string_handle, string, length)
 
 
-def GetString(session, string_handle):
+def get_string(session, string_handle):
     """Summary
 
     Parameters
@@ -1468,15 +1397,15 @@ def GetString(session, string_handle):
         Description
     """
     buffer_length = c_int32()
-    _GetStringBufLength(session, string_handle, buffer_length)
+    _get_string_buf_length(session, string_handle, buffer_length)
     buffers = create_string_buffer(buffer_length.value)
-    _GetString(session, string_handle, buffers, buffer_length)
+    _get_string(session, string_handle, buffers, buffer_length)
 
     return buffers.value.decode()
 
 
-def _GetStatusString(session, status=HDATA.StatusType.COOK_RESULT,
-                     verbosity=HDATA.StatusVerbosity.ERRORS):
+def _get_status_string(session, status=HDATA.StatusType.COOK_RESULT,\
+    verbosity=HDATA.StatusVerbosity.ERRORS):
     """Summary
 
     Parameters

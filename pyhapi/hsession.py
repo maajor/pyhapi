@@ -1,22 +1,57 @@
-"""Summary
+# -*- coding: utf-8 -*-
+"""wrapper for houdini engine's session.
+Author  : Maajor
+Email   : hello_myd@126.com
+
+HSession:
+    A wrapper fou houdini engine's session, it contains the session itself\
+         and other informations such as nodes, process id etc.
+    Use this object to get nodes, save hips. Creating nodes and\
+         lots of hengine operation need HSession object as parameter.
+
+HSessionManager:
+    Use this object to get HSession object
+
+Example usage:
+
+import pyhapi as ph
+
+#create a houdini engine session
+session = ph.HSessionManager.get_or_create_default_session()
+
+#create a geo objnode
+box = ph.HNode(session, "geo", "ProgrammaticBox")
+
+#save the session to a hip file
+session.save_hip("test.hip")
+
 """
 from . import hdata as HDATA
 from . import hapi as HAPI
 from .hnode import HExistingNode
 
+
+__all__ = [
+    # Classes
+    'HSession', 'HSessionManager'
+]
+
+
 class HSession():
 
-    """Summary
+    """A wrapper fou houdini engine's session, it contains the session itself\
+        and other informations such as nodes, process id etc.
 
     Attributes:
-        ConnectedState (TYPE): Description
-        CookOption (TYPE): Description
-        HAPISession (TYPE): Description
-        ProcessId (TYPE): Description
+        hapi_session (HAPI_SessionId:int64): hapi session id
+        connected_state (hdata.SessionConnectionState): state of current session
+        nodes (list(hnode.HNodeBase)): all nodes in this session
+        process_id (int): process id used by this session
+        cook_option (hdata.CookOptions): cook option of this session
     """
 
     def __init__(self):
-        """Summary
+        """Initialize the session
         """
         self.hapi_session = HDATA.Session(HDATA.SessionType.THRIFT, 0)
         self.connected_state = HDATA.SessionConnectionState.NOT_CONNECTED
@@ -25,13 +60,14 @@ class HSession():
         self.cook_option = HAPI.GetCookOptions()
 
     def get_node(self, node_id):
-        """[summary]
+        """Get node in this session by HAPI_NodeId
 
         Args:
-            node_id ([type]): [description]
+            node_id (hdata.HAPI_NodeId ): node's id store by the session
 
         Returns:
-            [type]: [description]
+            hnode.HNodeBase: an object represent that node in session. It will\
+                return None if cannot find any node matching the node id
         """
         try_get_node = self.nodes.get(node_id)
         if try_get_node is not None:
@@ -44,99 +80,83 @@ class HSession():
         return None
 
     def create_thrift_pipe_session(self, rootpath, auto_close=True, timeout=10000.0):
-        """Summary
+        """Create the session in thrift-pipe manner
 
         Args:
-            rootpath (TYPE): Description
-            pipeName (str, optional): Description
-            autoClose (bool, optional): Description
-            timeout (float, optional): Description
+            rootpath (string): file path to hsession project's root path, \
+                it could contain /hda folder
+            auto_close (bool, optional): Close the server automatically when\
+                 all clients disconnect from it. Defaults to True.
+            timeout (float, optional): Timeout in milliseconds for waiting on \
+                the server to signal that it's ready to serve. If the server \
+                    fails to signal within this time interval, the start server \
+                        call fails and the server process is terminated. \
+                            Defaults to 10000.0.
 
         Returns:
-            TYPE: Description
+            bool: true if the session created successfully, false not.
         """
-        return self.internal_create_thrift_pipe_session(rootpath, True, auto_close, timeout)
+        return self._internal_create_thrift_pipe_session(rootpath, True, auto_close, timeout)
 
-    def internal_create_thrift_pipe_session(\
+    def _internal_create_thrift_pipe_session(\
         self, rootpath, create_session=True, auto_close=True, timeout=10000.0):
-        """Summary
 
-        Args:
-            rootpath (TYPE): Description
-            bCreateSession (bool, optional): Description
-            pipeName (str, optional): Description
-            autoClose (bool, optional): Description
-            timeout (float, optional): Description
+        try:
+            self.check_and_close_existing_session()
 
-        Returns:
-            TYPE: Description
-        """
-        self.check_and_close_existing_session()
+            self.hapi_session = HDATA.Session(HDATA.SessionType.THRIFT, 0)
+            self.connected_state = HDATA.SessionConnectionState.FAILED_TO_CONNECT
 
-        self.hapi_session = HDATA.Session(HDATA.SessionType.THRIFT, 0)
-        self.connected_state = HDATA.SessionConnectionState.FAILED_TO_CONNECT
+            if create_session:
+                server_options = HDATA.ThriftServerOptions(auto_close, timeout)
+                self.process_id = HAPI.start_thrift_named_pipe_server(server_options)
 
-        if create_session:
-            server_options = HDATA.ThriftServerOptions(auto_close, timeout)
-            self.process_id = HAPI.StartThriftNamedPipeServer(server_options)
+            HAPI.create_thrift_named_pipe_session(self.hapi_session)
+            self._initialize_session(rootpath)
+            return True
+        except AssertionError as error:
+            print("HAPI excecution failed")
+            print(error)
+            return False
 
-        HAPI.CreateThriftNamedPipeSession(self.hapi_session)
-
-        return self.initialize_session(rootpath)
-
-    def initialize_session(self, rootpath):
-        """Summary
-
-        Args:
-            rootpath (TYPE): Description
-
-        Returns:
-            TYPE: Description
-        """
-        HAPI.Initialize(self.hapi_session, self.cook_option,\
+    def _initialize_session(self, rootpath):
+        HAPI.initialize(self.hapi_session, self.cook_option,\
             otl_search_path="{0}\\hda\\".format(rootpath))
         self.connected_state = HDATA.SessionConnectionState.CONNECTED
-        return True
 
     def cleanup(self):
-        """Summary
+        """Clean up current session
         """
         if self.is_session_valid():
-            HAPI.Cleanup(self.hapi_session)
-
-    def close_session(self):
-        """Summary
-        """
-        if self.is_session_valid():
-            print("Close Session")
-            HAPI.Cleanup(self.hapi_session)
-            HAPI.CloseSession(self.hapi_session)
+            HAPI.cleanup(self.hapi_session)
 
     def check_and_close_existing_session(self):
-        """Summary
+        """Close current session
 
         Returns:
-            TYPE: Description
+            bool: if the close success
         """
         if self.hapi_session is not None and self.is_session_valid():
-            return self.close_session()
+            print("Close Session")
+            HAPI.cleanup(self.hapi_session)
+            HAPI.close_session(self.hapi_session)
         return True
 
     def is_session_valid(self):
-        """Summary
+        """Check if current session is valid
 
         Returns:
-            TYPE: Description
+            bool: if current session is valid
         """
         if self.connected_state != HDATA.SessionConnectionState.FAILED_TO_CONNECT:
-            return HAPI.IsSessionValid(self.hapi_session)
+            return HAPI.is_session_valid(self.hapi_session)
         return False
 
     def save_hip(self, filename="debug.hip"):
-        """Summary
+        """Save current session to a hip file
 
         Args:
-            filename (str, optional): Description
+            filename (str, optional): name of saved hip file
         """
         HAPI.SaveHIPFile(self.hapi_session, filename)
         print("Session saved to {0}".format(filename))
@@ -146,72 +166,58 @@ class HSession():
 
 class HSessionManager():
 
-    """Summary
+    """Use this object to get HSession object
     """
 
     _defaultSession = None
+    _rootpath = ""
 
     @staticmethod
     def get_or_create_default_session(rootpath=""):
-        """Summary
+        """Get or create an session
 
         Args:
-            rootpath (str, optional): Description
+            rootpath (str, optional): file path to hsession project's root path, \
+                it could contain /hda folder
 
         Returns:
-            TYPE: Description
+            HSession: session created
         """
+        HSessionManager._rootpath = rootpath
         if HSessionManager._defaultSession is not None and\
-            HSessionManager._defaultSession.IsSessionValid():
+            HSessionManager._defaultSession.is_session_valid():
             return HSessionManager._defaultSession
         if HSessionManager._defaultSession is None or\
             HSessionManager._defaultSession.ConnectedState ==\
                 HDATA.SessionConnectionState.NOT_CONNECTED:
-            HSessionManager.create_thrift_pipe_session(rootpath)
-        return HSessionManager._defaultSession
+            if HSessionManager._create_thrift_pipe_session(rootpath):
+                return HSessionManager._defaultSession
+        HSessionManager._defaultSession = None
+        return None
 
     @staticmethod
-    def check_and_close_existing_session():
-        """Summary
-        """
+    def _check_and_close_existing_session():
         if HSessionManager._defaultSession is not None:
             HSessionManager._defaultSession.CloseSession()
             HSessionManager._defaultSession = None
 
     @staticmethod
-    def create_thrift_pipe_session(rootpath, auto_close=True, timeout=10000.0):
-        """Summary
-
-        Args:
-            rootpath (TYPE): Description
-            pipeName (str, optional): Description
-            autoClose (bool, optional): Description
-            timeout (float, optional): Description
-
-        Returns:
-            TYPE: Description
-        """
-        HSessionManager.check_and_close_existing_session()
+    def _create_thrift_pipe_session(rootpath, auto_close=True, timeout=10000.0):
+        HSessionManager._check_and_close_existing_session()
         HSessionManager._defaultSession = HSession()
         return HSessionManager._defaultSession.\
             create_thrift_pipe_session(rootpath, auto_close, timeout)
 
     @staticmethod
-    def close_default_session():
-        """Summary
-        """
-        HSessionManager.check_and_close_existing_session()
-
-    @staticmethod
     def restart_session():
-        """Summary
+        """Restart default session
 
         Returns:
-            TYPE: Description
+            HSession: session created
         """
         if HSessionManager._defaultSession is not None:
             return HSessionManager._defaultSession.RestartSession()
         session = HSession()
-        if session.create_thrift_pipe_session(True):
+        if session.create_thrift_pipe_session(HSessionManager._rootpath, True):
             HSessionManager._defaultSession = session
         return None

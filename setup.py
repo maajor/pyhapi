@@ -1,18 +1,23 @@
-from setuptools import setup
-from setuptools import find_packages
-
+# -*- coding: utf-8 -*-
+"""Setup pyhapi
+Author  : Maajor
+Email   : hello_myd@126.com
+"""
 import io
 import re
 
+from setuptools import setup
+from setuptools import find_packages
+
 with io.open("README.rst", "rt", encoding="utf8") as f:
-    readme = f.read()
+    README = f.read()
 
 with io.open("pyhapi/__init__.py", "rt", encoding="utf8") as f:
-    version = re.search(r'__version__ = "(.*?)"', f.read()).group(1)
+    VERSION = re.search(r'__version__ = "(.*?)"', f.read()).group(1)
 
 setup(
     name="pyhapi",
-    version=version,
+    version=VERSION,
     url="https://github.com/maajor/pyhapi",
     project_urls={
         "Documentation": "https://github.com/maajor/pyhapi",
@@ -25,7 +30,7 @@ setup(
     maintainer="Yidong Ma",
     maintainer_email="hello_myd@126.com",
     description="A python wrapper for houdini engine's C API",
-    long_description=readme,
+    long_description=README,
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Environment :: Console",

@@ -181,10 +181,10 @@ class HGeo():
             node_id (TYPE): Description
         """
 
-        HAPI.SetPartInfo(session.hapi_session, node_id, self.part_info)
+        HAPI.set_part_info(session.hapi_session, node_id, self.part_info)
 
         for attrib_info, name, data in self.attribs.values():
-            HAPI.AddAttribute(session.hapi_session, node_id, name, attrib_info)
+            HAPI.add_attribute(session.hapi_session, node_id, name, attrib_info)
             HAPI.STORAGE_TYPE_TO_SET_ATTRIB[attrib_info.storage](
                 session.hapi_session, node_id, name, attrib_info, data)
 
@@ -229,9 +229,9 @@ class HGeoMesh(HGeo):
             node_id ([type]): [description]
             part_id ([type]): [description]
         """
-        self.part_info = HAPI.GetPartInfo(session.hapi_session, node_id, part_id)
+        self.part_info = HAPI.get_part_info(session.hapi_session, node_id, part_id)
         for attrib_type in range(0, HDATA.AttributeOwner.MAX):
-            attrib_names = HAPI.GetAttributeNames(
+            attrib_names = HAPI.get_attribute_names(
                 session.hapi_session,
                 node_id,
                 self.part_info,
@@ -239,7 +239,7 @@ class HGeoMesh(HGeo):
             for attrib_name in attrib_names:
                 # do not extract private data
                 if not attrib_name.startswith("__"):
-                    attrib_info = HAPI.GetAttributeInfo(
+                    attrib_info = HAPI.get_attribute_info(
                         session.hapi_session, node_id, part_id, attrib_name, attrib_type)
                     data = HAPI.STORAGE_TYPE_TO_GET_ATTRIB[attrib_info.storage](
                         session.hapi_session, node_id, part_id, attrib_name, attrib_info)
@@ -255,11 +255,11 @@ class HGeoMesh(HGeo):
         """
         super().commit_to_node(session, node_id)
 
-        HAPI.SetVertexList(session.hapi_session, node_id, self.faces)
+        HAPI.set_vertex_list(session.hapi_session, node_id, self.faces)
         # Todo: what if each face's vertex count not same
-        HAPI.SetFaceCounts(session.hapi_session, node_id, np.repeat(
+        HAPI.set_face_counts(session.hapi_session, node_id, np.repeat(
             self.faces.shape[1], self.faces.shape[0]))
-        HAPI.CommitGeo(session.hapi_session, node_id)
+        HAPI.commit_geo(session.hapi_session, node_id)
 
 
 class HGeoCurve(HGeo):
@@ -311,10 +311,10 @@ class HGeoCurve(HGeo):
         """
         super().commit_to_node(session, node_id)
 
-        HAPI.SetCurveInfo(session.hapi_session, node_id, self.curve_info)
-        HAPI.SetCurveCounts(session.hapi_session, node_id,
-                            self.part_info.id, self.curve_count)
-        HAPI.SetCurveKnots(session.hapi_session, node_id,
-                           self.part_info.id, self.curve_knots)
+        HAPI.set_curve_info(session.hapi_session, node_id, self.curve_info)
+        HAPI.set_curve_counts(session.hapi_session, node_id,\
+            self.part_info.id, self.curve_count)
+        HAPI.set_curve_knots(session.hapi_session, node_id,\
+            self.part_info.id, self.curve_knots)
 
-        HAPI.CommitGeo(session.hapi_session, node_id)
+        HAPI.commit_geo(session.hapi_session, node_id)

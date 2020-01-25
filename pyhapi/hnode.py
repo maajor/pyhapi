@@ -34,7 +34,7 @@ class HNodeBase():
             input_index (int, optional): Description
             output_index (int, optional): Description
         """
-        HAPI.ConnectNodeInput(self.session.hapi_session,\
+        HAPI.connect_node_input(self.session.hapi_session,\
             self.node_id, node_to_connect.node_id, input_index, output_index)
         return self
 
@@ -46,7 +46,7 @@ class HNodeBase():
             input_index (int, optional): Description
             output_index (int, optional): Description
         """
-        HAPI.DisconnectNodeInput(self.session.hapi_session, self.node_id, input_index)
+        HAPI.disconnect_node_input(self.session.hapi_session, self.node_id, input_index)
         return self
 
     def get_node_input(self, input_index=0):
@@ -58,7 +58,7 @@ class HNodeBase():
         Returns:
             [type]: [description]
         """
-        input_node_id = HAPI.QueryNodeInput(self.session.hapi_session, self.node_id, input_index)
+        input_node_id = HAPI.query_node_input(self.session.hapi_session, self.node_id, input_index)
         return self.session.get_node(input_node_id)
 
     def get_child_nodes(self):
@@ -67,8 +67,8 @@ class HNodeBase():
         Returns:
             [type]: [description]
         """
-        child_count = HAPI.ComposeChildNodeList(self.session.hapi_session, self.node_id)
-        child_nodes = HAPI.GetComposedChildNodeList(self.session.hapi_session,\
+        child_count = HAPI.compose_child_node_list(self.session.hapi_session, self.node_id)
+        child_nodes = HAPI.get_composed_child_node_list(self.session.hapi_session,\
              self.node_id, child_count)
         return [self.session.get_node(node_id) for node_id in child_nodes]
 
@@ -84,9 +84,10 @@ class HNodeBase():
         """Summary
         """
         try:
-            HAPI.DeleteNode(self.session.hapi_session, self.node_id)
+            HAPI.delete_node(self.session.hapi_session, self.node_id)
             self.instantiated = False
-        except Exception as error:
+        except AssertionError as error:
+            print("HAPI excecution failed")
             print(error)
 
 
@@ -105,7 +106,7 @@ class HNode(HNodeBase):
             node_name (TYPE): Description
         """
         super(HNode, self).__init__(session)
-        self.node_id = HAPI.CreateNode(self.session.hapi_session, operator_name, node_name,\
+        self.node_id = HAPI.create_node(self.session.hapi_session, operator_name, node_name,\
             parent_node_id=parent_node.node_id if parent_node is not None else -1,\
                 cook_on_creation=False)
         self.instantiated = True
@@ -116,13 +117,13 @@ class HNode(HNodeBase):
     def get_params(self):
         """Summary
         """
-        self.node_info = HAPI.GetNodeInfo(self.session.hapi_session, self.node_id)
-        self.param_info = HAPI.GetParameters(\
+        self.node_info = HAPI.get_node_info(self.session.hapi_session, self.node_id)
+        self.param_info = HAPI.get_parameters(\
             self.session.hapi_session, self.node_id, self.node_info)
         self.param_id_dict = {}
         for i in range(0, self.node_info.parmCount):
             namesh = self.param_info[i].labelSH
-            namestr = HAPI.GetString(self.session.hapi_session, namesh)
+            namestr = HAPI.get_string(self.session.hapi_session, namesh)
             self.param_id_dict[namestr] = i
 
     def get_param_value(self, param_name):
@@ -139,11 +140,11 @@ class HNode(HNodeBase):
         paramid = self.param_id_dict[param_name]
         paraminfo = self.param_info[paramid]
         if paraminfo.IsInt():
-            return HAPI.GetParmIntValue(self.session.hapi_session, self.node_id, param_name)
+            return HAPI.get_param_int_value(self.session.hapi_session, self.node_id, param_name)
         if paraminfo.isFloat():
-            return HAPI.GetParmFloatValue(self.session.hapi_session, self.node_id, param_name)
+            return HAPI.get_param_float_value(self.session.hapi_session, self.node_id, param_name)
         if paraminfo.isString():
-            return HAPI.GetParamStringValue(self.session.hapi_session, self.node_id, param_name)
+            return HAPI.get_param_string_value(self.session.hapi_session, self.node_id, param_name)
         return None
 
     def set_param_value(self, param_name, value):
@@ -161,12 +162,14 @@ class HNode(HNodeBase):
         paramid = self.param_id_dict[param_name]
         paraminfo = self.param_info[paramid]
         if paraminfo.IsInt():
-            return HAPI.SetParmIntValue(self.session.hapi_session, self.node_id, param_name, value)
+            return HAPI.set_param_int_value(self.session.hapi_session, \
+                self.node_id, param_name, value)
         if paraminfo.isFloat():
-            return HAPI.SetParmFloatValue(\
+            return HAPI.set_param_float_value(\
                 self.session.hapi_session, self.node_id, param_name, value)
         if paraminfo.isString():
-            return HAPI.SetParamStringValue(self.session.hapi_session, self.node_id, paramid, value)
+            return HAPI.set_param_string_value(self.session.hapi_session, \
+                self.node_id, paramid, value)
         return None
 
     def get_display_geos(self):
@@ -177,11 +180,11 @@ class HNode(HNodeBase):
         """
         all_geos = []
         #asset_info = HAPI.GetAssetInfo(self.session.HAPISession, self.node_id)
-        child_sop_count = HAPI.ComposeObjectList(self.session.hapi_session, self.node_id)
-        child_object_infos = HAPI.GetComposedObjectList(self.session.hapi_session,\
+        child_sop_count = HAPI.compose_object_list(self.session.hapi_session, self.node_id)
+        child_object_infos = HAPI.get_composed_object_list(self.session.hapi_session,\
             self.node_id, child_sop_count)
         for objectinfo in child_object_infos:
-            geo_info = HAPI.GetDisplayGeoInfo(self.session.hapi_session, objectinfo.nodeId)
+            geo_info = HAPI.get_display_geo_info(self.session.hapi_session, objectinfo.nodeId)
             for part_id in range(0, geo_info.partCount):
                 extract_mesh = HGeoMesh()
                 extract_mesh.extract_from_sop(self.session, geo_info.nodeId, part_id)
@@ -196,7 +199,7 @@ class HNode(HNodeBase):
         """
         if not self.is_inited():
             return None
-        HAPI.CookNode(self.session.hapi_session, self.session.cook_option, self.node_id)
+        HAPI.cook_node(self.session.hapi_session, self.session.cook_option, self.node_id)
         return self
 
     async def cook_async(self):
@@ -207,7 +210,8 @@ class HNode(HNodeBase):
         """
         if not self.is_inited():
             return
-        await HAPI.CookNodeAsync(self.session.hapi_session, self.session.cook_option, self.node_id)
+        await HAPI.cook_node_async(self.session.hapi_session, \
+            self.session.cook_option, self.node_id)
 
     def press_button(self, param_name):
         """Summary
@@ -222,9 +226,9 @@ class HNode(HNodeBase):
             return
         #paramid = self.param_id_dict[param_name]
         #paraminfo = self.param_info[paramid]
-        HAPI.SetParmIntValue(self.session.hapi_session, self.node_id, param_name, 1)
-        HAPI.WaitCook(self.session.hapi_session, 5.0)
-        HAPI.SetParmIntValue(self.session.hapi_session, self.node_id, param_name, 0)
+        HAPI.set_param_int_value(self.session.hapi_session, self.node_id, param_name, 1)
+        HAPI.wait_cook(self.session.hapi_session, 5.0)
+        HAPI.set_param_int_value(self.session.hapi_session, self.node_id, param_name, 0)
 
     async def press_button_async(self, param_name):
         """Summary
@@ -239,9 +243,9 @@ class HNode(HNodeBase):
             return
         #paramid = self.param_id_dict[param_name]
         #paraminfo = self.param_info[paramid]
-        HAPI.SetParmIntValue(self.session.hapi_session, self.node_id, param_name, 1)
-        await HAPI.WaitCook(self.session.hapi_session, 5.0)
-        HAPI.SetParmIntValue(self.session.hapi_session, self.node_id, param_name, 0)
+        HAPI.set_param_int_value(self.session.hapi_session, self.node_id, param_name, 1)
+        await HAPI.wait_cook_async(self.session.hapi_session, 5.0)
+        HAPI.set_param_int_value(self.session.hapi_session, self.node_id, param_name, 0)
 
 class HInputNode(HNodeBase):
 
@@ -262,7 +266,7 @@ class HInputNode(HNodeBase):
             node_name (TYPE): Description
         """
         super(HInputNode, self).__init__(session)
-        self.node_id = HAPI.CreateInputNode(self.session.hapi_session, node_name)
+        self.node_id = HAPI.create_input_node(self.session.hapi_session, node_name)
         self.instantiated = True
         self.name = node_name
         self.session.nodes[self.node_id] = self
@@ -278,9 +282,10 @@ class HExistingNode(HNodeBase):
         super(HExistingNode, self).__init__(session)
         self.node_id = node_id
         try:
-            self.node_info = HAPI.GetNodeInfo(self.session.hapi_session, self.node_id)
-            self.name = HAPI.GetString(self.session.hapi_session, self.node_info.nameSH)
+            self.node_info = HAPI.get_node_info(self.session.hapi_session, self.node_id)
+            self.name = HAPI.get_string(self.session.hapi_session, self.node_info.nameSH)
             self.instantiated = True
-        except Exception as error:
+        except AssertionError as error:
+            print("HAPI excecution failed")
             self.instantiated = False
             print(error)
