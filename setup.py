@@ -48,5 +48,7 @@ setup(
     include_package_data=True,
     python_requires=">=3.6",
     setup_requires=['pytest-runner'],
+    install_requires=['numpy>=1.15.0'],
     tests_require=['pytest', 'pytest-asyncio'],
+    long_description_content_type="text/markdown",
 )
