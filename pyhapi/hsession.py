@@ -48,6 +48,8 @@ class HSession():
         nodes (list(hnode.HNodeBase)): all nodes in this session
         process_id (int): process id used by this session
         cook_option (hdata.CookOptions): cook option of this session
+        root_path (str): file path to hsession project's root path, \
+                it could contain /hda folder
     """
 
     def __init__(self):
@@ -58,6 +60,7 @@ class HSession():
         self.nodes = {}
         self.process_id = -1
         self.cook_option = HAPI.get_cook_options()
+        self.root_path = ""
 
     def get_node(self, node_id):
         """Get node in this session by HAPI_NodeId
@@ -96,9 +99,9 @@ class HSession():
         Returns:
             bool: true if the session created successfully, false not.
         """
-        return self._internal_create_thrift_pipe_session(rootpath, True, auto_close, timeout)
+        return self.__internal_create_thrift_pipe_session(rootpath, True, auto_close, timeout)
 
-    def _internal_create_thrift_pipe_session(\
+    def __internal_create_thrift_pipe_session(\
         self, rootpath, create_session=True, auto_close=True, timeout=10000.0):
 
         try:
@@ -112,16 +115,17 @@ class HSession():
                 self.process_id = HAPI.start_thrift_named_pipe_server(server_options)
 
             HAPI.create_thrift_named_pipe_session(self.hapi_session)
-            self._initialize_session(rootpath)
+            self.__initialize_session(rootpath)
             return True
         except AssertionError as error:
             print("HAPI excecution failed")
             print(error)
             return False
 
-    def _initialize_session(self, rootpath):
+    def __initialize_session(self, rootpath):
         HAPI.initialize(self.hapi_session, self.cook_option,\
             otl_search_path="{0}\\hda\\".format(rootpath))
+        self.root_path = rootpath
         self.connected_state = HDATA.SessionConnectionState.CONNECTED
 
     def cleanup(self):
@@ -161,6 +165,16 @@ class HSession():
         HAPI.save_hip_file(self.hapi_session, filename)
         print("Session saved to {0}".format(filename))
 
+    def restart_session(self):
+        """Restart current session
+
+        Returns:
+            HSession: session itself
+        """
+        HAPI.cleanup(self.hapi_session)
+        self.__initialize_session(self.root_path)
+        return self
+
     def __del__(self):
         self.check_and_close_existing_session()
 
@@ -190,20 +204,20 @@ class HSessionManager():
         if HSessionManager._defaultSession is None or\
             HSessionManager._defaultSession.ConnectedState ==\
                 HDATA.SessionConnectionState.NOT_CONNECTED:
-            if HSessionManager._create_thrift_pipe_session(rootpath):
+            if HSessionManager.__create_thrift_pipe_session(rootpath):
                 return HSessionManager._defaultSession
         HSessionManager._defaultSession = None
         return None
 
     @staticmethod
-    def _check_and_close_existing_session():
+    def __check_and_close_existing_session():
         if HSessionManager._defaultSession is not None:
             HSessionManager._defaultSession.CloseSession()
             HSessionManager._defaultSession = None
 
     @staticmethod
-    def _create_thrift_pipe_session(rootpath, auto_close=True, timeout=10000.0):
-        HSessionManager._check_and_close_existing_session()
+    def __create_thrift_pipe_session(rootpath, auto_close=True, timeout=10000.0):
+        HSessionManager.__check_and_close_existing_session()
         HSessionManager._defaultSession = HSession()
         return HSessionManager._defaultSession.\
             create_thrift_pipe_session(rootpath, auto_close, timeout)
@@ -216,7 +230,7 @@ class HSessionManager():
             HSession: session created
         """
         if HSessionManager._defaultSession is not None:
-            return HSessionManager._defaultSession.RestartSession()
+            return HSessionManager._defaultSession.restart_session()
         session = HSession()
         if session.create_thrift_pipe_session(HSessionManager._rootpath, True):
             HSessionManager._defaultSession = session

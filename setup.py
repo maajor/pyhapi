@@ -9,7 +9,7 @@ import re
 from setuptools import setup
 from setuptools import find_packages
 
-with io.open("README.rst", "rt", encoding="utf8") as f:
+with io.open("README.md", "rt", encoding="utf8") as f:
     README = f.read()
 
 with io.open("pyhapi/__init__.py", "rt", encoding="utf8") as f:
@@ -48,5 +48,5 @@ setup(
     include_package_data=True,
     python_requires=">=3.6",
     setup_requires=['pytest-runner'],
-    tests_require=['pytest'],
+    tests_require=['pytest', 'pytest-asyncio'],
 )

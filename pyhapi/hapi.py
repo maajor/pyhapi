@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=too-many-lines
 """Wrapper for HAPI's APIs.
 Author  : Maajor
 Email   : hello_myd@126.com
@@ -724,7 +725,7 @@ def set_parm_float_value(session, node_id, parmname, value, tupleid=0):
         tupleid (int, optional): Index within the parameter's values tuple.. Defaults to 0.
     """
     result = HAPI_LIB.HAPI_SetParmFloatValue(
-        byref(session), node_id, c_char_p(parmname.encode('utf-8')), tupleid, value)
+        byref(session), node_id, c_char_p(parmname.encode('utf-8')), c_int(tupleid), c_float(value))
     assert result == HDATA.Result.SUCCESS,\
         "SetParmFloatValue Failed with {0}".format(
             HDATA.Result(result).name)
@@ -816,6 +817,70 @@ def set_curve_knots(session, node_id, part_id, curve_knots):
         "SetCurveKnots Failed with {0}".format(HDATA.Result(result).name)
     return
 
+def get_curve_info(session, node_id, part_id):
+    """Wrapper for HAPI_SetCurveInfo
+    Retrieve any meta-data about the curves, including the curve's type, order, and periodicity.
+
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        part_id (int): Part id of geo
+
+    Returns:
+        CurveInfo: CurveInfo of this node
+    """
+    curve_info = HDATA.CurveInfo()
+    result = HAPI_LIB.HAPI_GetCurveInfo(
+        byref(session), node_id, part_id, byref(curve_info))
+    assert result == HDATA.Result.SUCCESS,\
+        "GetCurveInfo Failed with {0}".format(HDATA.Result(result).name)
+    return curve_info
+
+
+def get_curve_counts(session, node_id, part_id, curve_count):
+    """Wrapper for HAPI_GetCurveCounts
+    Retrieve the number of vertices for each curve in the part.
+
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        part_id (int): Currently unused. Input asset geos are assumed to have only one part.
+        curve_count (int): The number of cvs each curve contains.
+
+    Returns:
+        ndarray: number of vertices for each curve
+    """
+    data_buffer = (c_int32 * curve_count)()
+    result = HAPI_LIB.HAPI_GetCurveCounts(
+        byref(session), node_id, part_id,
+        byref(data_buffer), 0, curve_count)
+    assert result == HDATA.Result.SUCCESS,\
+        "GetCurveCounts Failed with {0}".format(HDATA.Result(result).name)
+    data_np = np.frombuffer(data_buffer, np.int32)
+    return data_np
+
+
+def get_curve_knots(session, node_id, part_id, knot_length):
+    """Wrapper for HAPI_GetCurveKnots
+    Retrieve the knots of the curves in this part.
+
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        part_id (int): Currently unused. Input asset geos are assumed to have only one part.
+        knot_length (int): The number of knots in curve
+
+    Returns:
+        ndarray: knots for each curve
+    """
+    data_buffer = (c_float * knot_length)()
+    result = HAPI_LIB.HAPI_GetCurveKnots(
+        byref(session), node_id, part_id,
+        byref(data_buffer), 0, knot_length)
+    assert result == HDATA.Result.SUCCESS,\
+        "GetCurveKnots Failed with {0}".format(HDATA.Result(result).name)
+    data_np = np.frombuffer(data_buffer, np.float32)
+    return data_np
 
 def add_attribute(session, node_id, name, attrib_info):
     """Wrapper for HAPI_AddAttribute
@@ -1164,6 +1229,66 @@ def set_face_counts(session, node_id, face_counts_array):
     assert result == HDATA.Result.SUCCESS,\
         "SetFaceCounts Failed with {0}".format(HDATA.Result(result).name)
 
+def get_vertex_list(session, node_id, part_info):
+    """Wrapper for HAPI_GetVertexList
+
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        part_info (PartInfo): Part info of querying
+
+    Returns:
+        np.ndarray: Array of vertices
+    """
+    data_buffer = (c_int * part_info.vertexCount)()
+    result = HAPI_LIB.HAPI_GetVertexList(
+        byref(session), node_id, part_info.id, byref(data_buffer),
+        0, part_info.vertexCount)
+    assert result == HDATA.Result.SUCCESS,\
+        "GetVertexList Failed with {0}".format(HDATA.Result(result).name)
+    data_np = np.frombuffer(data_buffer, np.int32)
+    return data_np
+
+
+def get_face_counts(session, node_id, part_info):
+    """Wrapper for HAPI_GetFaceCounts
+    Get the array of faces where the nth integer in the array \
+        is the number of vertices the nth face has.
+
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        part_info (PartInfo): Part info of querying
+
+    Returns:
+        np.ndarray: Array of face count
+    """
+    data_buffer = (c_int * part_info.faceCount)()
+    result = HAPI_LIB.HAPI_GetFaceCounts(
+        byref(session), node_id, part_info.id, byref(data_buffer),
+        0, part_info.faceCount)
+    assert result == HDATA.Result.SUCCESS,\
+        "GetFaceCounts Failed with {0}".format(HDATA.Result(result).name)
+    data_np = np.frombuffer(data_buffer, np.int32)
+    return data_np
+
+def get_faces(session, node_id, part_info):
+    """Get faces of a part
+
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        part_info (PartInfo): Part info of querying
+
+    Returns:
+        np.ndarray: 2D Array of vertex list
+    """
+    vertex_list = get_vertex_list(session, node_id, part_info)
+    face_counts = get_face_counts(session, node_id, part_info)
+    for i in range(1, len(face_counts)):
+        face_counts[i] = face_counts[i-1] + face_counts[i]
+    faces = np.split(vertex_list, face_counts)
+    return faces
 
 def commit_geo(session, node_id):
     """Wrapper for HAPI_CommitGeo

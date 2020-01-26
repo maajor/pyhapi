@@ -40,7 +40,8 @@ another_box.disconnect_node_input(0).delete()
 
 """
 from . import hapi as HAPI
-from .hgeo import HGeoMesh
+from . import hdata as HDATA
+from .hgeo import HGeoMesh, HGeoCurve, HGeo
 
 class HNodeBase():
     """A base class for houdini engine's node, including shared operation\
@@ -59,6 +60,7 @@ class HNodeBase():
         self.instantiated = False
         self.node_id = -1
         self.name = ""
+        self.node_info = HDATA.NodeInfo()
 
     def is_inited(self):
         """If this node is inited
@@ -70,11 +72,19 @@ class HNodeBase():
             print("Asset Not Instantiated")
         return self.instantiated
 
+    def get_node_type(self):
+        """Get node's type
+
+        Returns:
+            NodeType: type of node
+        """
+        return self.node_info.type
+
     def connect_node_input(self, node_to_connect, input_index=0, output_index=0):
         """Connect another node into this node's input
 
         Args:
-            node_to_connect ([type]): The other node to connect to this node
+            node_to_connect (HNodeBase): The other node to connect to this node
             input_index (int, optional): This node's input index. Defaults to 0.
             output_index (int, optional): The other node's output index. Defaults to 0.
 
@@ -128,6 +138,44 @@ class HNodeBase():
         """
         geo.commit_to_node(self.session, self.node_id)
 
+    def __get_display_geo_by_node(self, node_id):
+        all_geos = []
+        geo_info = HAPI.get_display_geo_info(self.session.hapi_session, node_id)
+        for part_id in range(0, geo_info.partCount):
+            part_info = HAPI.get_part_info(self.session.hapi_session, geo_info.nodeId, part_id)
+            if part_info.type == HDATA.PartType.MESH:
+                extract_geo = HGeoMesh()
+            elif part_info.type == HDATA.PartType.CURVE:
+                extract_geo = HGeoCurve()
+            else:
+                print("Type of geo extraction not implemented {0}".format(part_info.type))
+                extract_geo = HGeo()
+            extract_geo.extract_from_sop(self.session, part_info, geo_info.nodeId, part_id)
+            all_geos.append(extract_geo)
+        return all_geos
+
+    def get_display_geos(self):
+        """Get display geo of this node
+
+        Returns:
+            list of HGeo: List of geos in this node
+        """
+        if self.get_node_type() == HDATA.NodeType.OBJ:
+            all_geos = []
+            child_sop_count = HAPI.compose_object_list(self.session.hapi_session, self.node_id)
+            if child_sop_count == 0:
+                return self.__get_display_geo_by_node(self.node_id)
+            child_object_infos = HAPI.get_composed_object_list(self.session.hapi_session,\
+                self.node_id, child_sop_count)
+            for objectinfo in child_object_infos:
+                sop_geo = self.__get_display_geo_by_node(objectinfo.nodeId)
+                all_geos.extend(sop_geo)
+            return all_geos
+        if self.get_node_type() == HDATA.NodeType.SOP:
+            return self.__get_display_geo_by_node(self.node_id)
+        print("Operator type is {0}, cannot retrieve geo".format(self.get_node_type()))
+        return None
+
     def delete(self):
         """Delete current node
         """
@@ -160,9 +208,9 @@ class HNode(HNodeBase):
         self.instantiated = True
         self.session.nodes[self.node_id] = self
         self.name = node_name
-        self._get_params()
+        self.__collect_params()
 
-    def _get_params(self):
+    def __collect_params(self):
         self.node_info = HAPI.get_node_info(self.session.hapi_session, self.node_id)
         self.param_info = HAPI.get_parameters(\
             self.session.hapi_session, self.node_id, self.node_info)
@@ -172,7 +220,34 @@ class HNode(HNodeBase):
             namestr = HAPI.get_string(self.session.hapi_session, namesh)
             self.param_id_dict[namestr] = i
 
-    def get_parm_value(self, param_name):
+    def get_param_names(self):
+        """Get all param in this node
+
+        Returns:
+            [str]: Name of all params
+        """
+        return self.param_id_dict.keys()
+
+    def get_param_type(self, param_name):
+        """Get param's type by name
+
+        Args:
+            param_name (str): Param name
+
+        Returns:
+            type: type of param
+        """
+        paramid = self.param_id_dict[param_name]
+        paraminfo = self.param_info[paramid]
+        if paraminfo.is_int():
+            return type(int)
+        if paraminfo.is_float():
+            return type(float)
+        if paraminfo.is_string():
+            return type(str)
+        return type(None)
+
+    def get_param_value(self, param_name):
         """Get param value
 
         Args:
@@ -185,19 +260,19 @@ class HNode(HNodeBase):
             return None
         paramid = self.param_id_dict[param_name]
         paraminfo = self.param_info[paramid]
-        if paraminfo.IsInt():
+        if paraminfo.is_int():
             return HAPI.get_parm_int_value(self.session.hapi_session, self.node_id, param_name)
-        if paraminfo.isFloat():
+        if paraminfo.is_float():
             return HAPI.get_parm_float_value(self.session.hapi_session, self.node_id, param_name)
-        if paraminfo.isString():
+        if paraminfo.is_string():
             return HAPI.get_parm_string_value(self.session.hapi_session, self.node_id, param_name)
         return None
 
-    def set_parm_value(self, param_name, value):
+    def set_param_value(self, param_name, value):
         """Set parameter value
 
         Args:
-            param_name ([type]): Parameter name to set
+            param_name (str): Parameter name to set
             value (int/float/str): Value to set to that param, \
                 depends on param type
 
@@ -209,13 +284,13 @@ class HNode(HNodeBase):
         paramid = self.param_id_dict[param_name]
         paraminfo = self.param_info[paramid]
         try:
-            if paraminfo.IsInt():
+            if paraminfo.is_int():
                 HAPI.set_parm_int_value(self.session.hapi_session, \
                     self.node_id, param_name, value)
-            if paraminfo.isFloat():
+            if paraminfo.is_float():
                 HAPI.set_parm_float_value(\
                     self.session.hapi_session, self.node_id, param_name, value)
-            if paraminfo.isString():
+            if paraminfo.is_string():
                 HAPI.set_parm_string_value(self.session.hapi_session, \
                     self.node_id, paramid, value)
             return True
@@ -223,25 +298,6 @@ class HNode(HNodeBase):
             print("HAPI excecution failed")
             print(error)
             return False
-
-    def get_display_geos(self):
-        """Get display geo of this node
-
-        Returns:
-            [HGeo]: List of geos in this node
-        """
-        all_geos = []
-        #asset_info = HAPI.GetAssetInfo(self.session.HAPISession, self.node_id)
-        child_sop_count = HAPI.compose_object_list(self.session.hapi_session, self.node_id)
-        child_object_infos = HAPI.get_composed_object_list(self.session.hapi_session,\
-            self.node_id, child_sop_count)
-        for objectinfo in child_object_infos:
-            geo_info = HAPI.get_display_geo_info(self.session.hapi_session, objectinfo.nodeId)
-            for part_id in range(0, geo_info.partCount):
-                extract_mesh = HGeoMesh()
-                extract_mesh.extract_from_sop(self.session, geo_info.nodeId, part_id)
-                all_geos.append(extract_mesh)
-        return all_geos
 
     def cook(self):
         """Cook this node in sync/blocking manner
@@ -265,32 +321,36 @@ class HNode(HNodeBase):
         await HAPI.cook_node_async(self.session.hapi_session, \
             self.session.cook_option, self.node_id)
 
-    def press_button(self, param_name):
+    def press_button(self, param_name, status_report_interval=5.0):
         """Press button in this node in sync/blocking manner
 
         Args:
             param_name (str): Button name to press
+            status_report_interval (float): Time interval \
+                in seconds to report status
         """
         if not self.is_inited():
             return
         #paramid = self.param_id_dict[param_name]
         #paraminfo = self.param_info[paramid]
         HAPI.set_parm_int_value(self.session.hapi_session, self.node_id, param_name, 1)
-        HAPI.wait_cook(self.session.hapi_session, 5.0)
+        HAPI.wait_cook(self.session.hapi_session, status_report_interval)
         HAPI.set_parm_int_value(self.session.hapi_session, self.node_id, param_name, 0)
 
-    async def press_button_async(self, param_name):
+    async def press_button_async(self, param_name, status_report_interval=5.0):
         """Press button in this node in async/non-blocking manner
 
         Args:
             param_name (str): Button name to press
+            status_report_interval (float): Time interval \
+                in seconds to report status
         """
         if not self.is_inited():
             return
         #paramid = self.param_id_dict[param_name]
         #paraminfo = self.param_info[paramid]
         HAPI.set_parm_int_value(self.session.hapi_session, self.node_id, param_name, 1)
-        await HAPI.wait_cook_async(self.session.hapi_session, 5.0)
+        await HAPI.wait_cook_async(self.session.hapi_session, status_report_interval)
         HAPI.set_parm_int_value(self.session.hapi_session, self.node_id, param_name, 0)
 
 class HInputNode(HNodeBase):
@@ -304,6 +364,7 @@ class HInputNode(HNodeBase):
         self.instantiated = True
         self.name = node_name
         self.session.nodes[self.node_id] = self
+        self.node_info = HAPI.get_node_info(self.session.hapi_session, self.node_id)
 
 class HExistingNode(HNodeBase):
     """A node created by hengine itself, such as child node of node instantiated\

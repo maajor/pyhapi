@@ -238,10 +238,46 @@ class HGeo():
             HAPI.STORAGE_TYPE_TO_SET_ATTRIB[attrib_info.storage](
                 session.hapi_session, node_id, name, attrib_info, data)
 
+    def extract_from_sop(self, session, part_info, node_id, part_id=0):
+        """Extract geometry from sop
+
+        Args:
+            session (int64): The session of Houdini you are interacting with.
+            part_info (PartInfo): The info of part
+            node_id (int): The node to add geo.
+            part_id (int): Part id. Default to 0
+        """
+        self.part_info = part_info
+        self.point_count = part_info.pointCount
+        self.vertex_count = part_info.vertexCount
+        self.face_count = part_info.faceCount
+
+        #Fill attributes
+        for attrib_type in range(0, HDATA.AttributeOwner.MAX):
+            attrib_names = HAPI.get_attribute_names(
+                session.hapi_session,
+                node_id,
+                self.part_info,
+                attrib_type)
+            for attrib_name in attrib_names:
+                # do not extract private data
+                if not attrib_name.startswith("__"):
+                    attrib_info = HAPI.get_attribute_info(
+                        session.hapi_session, node_id, part_id, attrib_name, attrib_type)
+                    data = HAPI.STORAGE_TYPE_TO_GET_ATTRIB[attrib_info.storage](
+                        session.hapi_session, node_id, part_id, attrib_name, attrib_info)
+                    self.attribs[(attrib_type, attrib_name)] = (
+                        attrib_info, attrib_name, data)
+
+
 
 class HGeoMesh(HGeo):
 
     """A class representing hengine's mesh geometry
+
+    Attributes:
+        faces (np.ndarray): Faces data, should be in 2D such as\
+                (face_count, vertex_each_face).
     """
 
     def __init__(self, vertices=None, faces=None):
@@ -267,30 +303,18 @@ class HGeoMesh(HGeo):
 
             self.add_attrib(HDATA.AttributeOwner.POINT, "P", vertices)
 
-    def extract_from_sop(self, session, node_id, part_id=0):
-        """Extract geometry from sop
+    def extract_from_sop(self, session, part_info, node_id, part_id=0):
+        """Extract mesh from sop
 
         Args:
             session (int64): The session of Houdini you are interacting with.
+            part_info (PartInfo): The info of part
             node_id (int): The node to add geo.
             part_id (int): Part id. Default to 0
         """
-        self.part_info = HAPI.get_part_info(session.hapi_session, node_id, part_id)
-        for attrib_type in range(0, HDATA.AttributeOwner.MAX):
-            attrib_names = HAPI.get_attribute_names(
-                session.hapi_session,
-                node_id,
-                self.part_info,
-                attrib_type)
-            for attrib_name in attrib_names:
-                # do not extract private data
-                if not attrib_name.startswith("__"):
-                    attrib_info = HAPI.get_attribute_info(
-                        session.hapi_session, node_id, part_id, attrib_name, attrib_type)
-                    data = HAPI.STORAGE_TYPE_TO_GET_ATTRIB[attrib_info.storage](
-                        session.hapi_session, node_id, part_id, attrib_name, attrib_info)
-                    self.attribs[(attrib_type, attrib_name)] = (
-                        attrib_info, attrib_name, data)
+        super().extract_from_sop(session, part_info, node_id, part_id)
+
+        self.faces = HAPI.get_faces(session.hapi_session, node_id, part_info)
 
     def commit_to_node(self, session, node_id):
         """Set this geo into hengine's node
@@ -310,9 +334,14 @@ class HGeoMesh(HGeo):
 class HGeoCurve(HGeo):
 
     """A class representing hengine's curve geometry
+
+    Attributes:
+        curve_knots (np.ndarray): Curve knots
+        curve_count (np.ndarray): Curve counts
+        curve_info (CurveInfo): CurveInfo
     """
 
-    def __init__(self, vertices, curve_knots=None, # pylint: disable=too-many-arguments
+    def __init__(self, vertices=None, curve_knots=None, # pylint: disable=too-many-arguments
                  is_periodic=False, order=4, curve_type=HDATA.CurveType.LINEAR):
         """Initialize
 
@@ -324,29 +353,30 @@ class HGeoCurve(HGeo):
                 Defaults to HDATA.CurveType.LINEAR.
         """
         super(HGeoCurve, self).__init__()
-        self.point_count = vertices.shape[0]
-        self.vertex_count = vertices.shape[0]
-        self.face_count = 1
-        self.curve_knots = curve_knots
-        self.curve_count = np.repeat(vertices.shape[0], 1)
+        if isinstance(vertices, np.ndarray):
+            self.point_count = vertices.shape[0]
+            self.vertex_count = vertices.shape[0]
+            self.face_count = 1
+            self.curve_knots = curve_knots
+            self.curve_count = np.repeat(vertices.shape[0], 1)
 
-        self.part_info.type = HDATA.PartType.CURVE
-        self.part_info.faceCount = self.face_count
-        self.part_info.vertexCount = self.vertex_count
-        self.part_info.pointCount = self.point_count
+            self.part_info.type = HDATA.PartType.CURVE
+            self.part_info.faceCount = self.face_count
+            self.part_info.vertexCount = self.vertex_count
+            self.part_info.pointCount = self.point_count
 
-        self.curve_info = HDATA.CurveInfo()
-        self.curve_info.curveType = curve_type
-        self.curve_info.curveCount = 1
-        self.curve_info.vertexCount = vertices.shape[0]
-        self.curve_info.knotCount = (
-            curve_knots.shape[0] if isinstance(curve_knots, np.ndarray) else 0)
-        self.curve_info.isPeriodic = is_periodic
-        self.curve_info.order = order
-        self.curve_info.hasKnots = isinstance(curve_knots, np.ndarray)
+            self.curve_info = HDATA.CurveInfo()
+            self.curve_info.curveType = curve_type
+            self.curve_info.curveCount = 1
+            self.curve_info.vertexCount = vertices.shape[0]
+            self.curve_info.knotCount = (
+                curve_knots.shape[0] if isinstance(curve_knots, np.ndarray) else 0)
+            self.curve_info.isPeriodic = is_periodic
+            self.curve_info.order = order
+            self.curve_info.hasKnots = isinstance(curve_knots, np.ndarray)
 
-        #self.AddPointAttrib("P", vertices)
-        self.add_attrib(HDATA.AttributeOwner.POINT, "P", vertices)
+            #self.AddPointAttrib("P", vertices)
+            self.add_attrib(HDATA.AttributeOwner.POINT, "P", vertices)
 
     def commit_to_node(self, session, node_id):
         """Set this geo into hengine's node
@@ -364,3 +394,23 @@ class HGeoCurve(HGeo):
             self.part_info.id, self.curve_knots)
 
         HAPI.commit_geo(session.hapi_session, node_id)
+
+    def extract_from_sop(self, session, part_info, node_id, part_id=0):
+        """Extract curve from sop
+
+        Args:
+            session (int64): The session of Houdini you are interacting with.
+            part_info (PartInfo): The info of part
+            node_id (int): The node to add geo.
+            part_id (int): Part id. Default to 0
+        """
+        super().extract_from_sop(session, part_info, node_id, part_id)
+        self.curve_info = HAPI.get_curve_info(session.hapi_session, node_id, part_info.id)
+        self.point_count = self.curve_info.vertexCount
+        self.vertex_count = self.curve_info.vertexCount
+        self.face_count = self.curve_info.curveCount
+        self.curve_count = HAPI.get_curve_counts(session.hapi_session, node_id, \
+            part_info.id, self.face_count)
+        if self.curve_info.hasKnots:
+            self.curve_knots = HAPI.get_curve_knots(session.hapi_session, node_id, \
+                part_info.id, self.curve_info.knotCount)
