@@ -1,17 +1,16 @@
 # -*- coding: utf-8 -*-
 """Test for creating and operations with hengine nodes
+Author  : Maajor
+Email   : hello_myd@126.com
 """
-import pytest
-
 import numpy as np
 
 import pyhapi as ph
 
-def test_create_input_node_and_set_curve():
-    """[summary]
+def test_create_input_node_and_set_curve(init_session):
+    """Create input node and marshall in curve
     """
-    session = ph.HSessionManager.get_or_create_default_session()
-    geo_inputnode = ph.HInputNode(session, "Curve")
+    geo_inputnode = ph.HInputNode(init_session, "Curve")
     curve_geo = ph.HGeoCurve(
         vertices=np.array(
             [[-4.0, 0.0, 4.0],
@@ -25,11 +24,10 @@ def test_create_input_node_and_set_curve():
     assert geo_inputnode is not None
 
 
-def test_create_input_node_and_set_mesh():
-    """[summary]
+def test_create_input_node_and_set_mesh(init_session):
+    """Create input node and marshall in mesh
     """
-    session = ph.HSessionManager.get_or_create_default_session()
-    geo_inputnode = ph.HInputNode(session, "Cube")
+    geo_inputnode = ph.HInputNode(init_session, "Cube")
     cube_geo = ph.HGeoMesh(
         vertices=np.array(
             [[0.0, 0.0, 0.0],
@@ -50,37 +48,33 @@ def test_create_input_node_and_set_mesh():
     geo_inputnode.set_geometry(cube_geo)
     assert geo_inputnode is not None
 
-def test_connect_nodes():
-    """[summary]
+def test_connect_nodes(init_session):
+    """Test connect nodes
     """
-    session = ph.HSessionManager.get_or_create_default_session()
-    geo_inputnode = ph.HInputNode(session, "Cube")
-    subdnode = ph.HNode(session, "Sop/subdivide", "Cube Subdivider").\
+    geo_inputnode = ph.HInputNode(init_session, "Cube")
+    subdnode = ph.HNode(init_session, "Sop/subdivide", "Cube Subdivider").\
         connect_node_input(geo_inputnode)
     assert subdnode is not None
 
-def test_init_hasset():
-    """[summary]
+def test_init_hasset(init_session):
+    """Test instantiate HDA asset
     """
-    session = ph.HSessionManager.get_or_create_default_session()
-    hda_asset = ph.HAsset(session, "hda/FourShapes.hda")
+    hda_asset = ph.HAsset(init_session, "hda/FourShapes.hda")
     asset_node = hda_asset.instantiate(node_name="Processor").cook()
     assert asset_node is not None
 
-def test_child_nodes():
-    """[summary]
+def test_child_nodes(init_session):
+    """Test get child nodes
     """
-    session = ph.HSessionManager.get_or_create_default_session()
-    hda_asset = ph.HAsset(session, "hda/FourShapes.hda")
+    hda_asset = ph.HAsset(init_session, "hda/FourShapes.hda")
     asset_node = hda_asset.instantiate(node_name="Processor").cook()
     child_nodes = asset_node.get_child_nodes()
     assert len(child_nodes) == 4
 
-def test_get_node_geo():
-    """[summary]
+def test_get_node_geo(init_session):
+    """Test get node geo
     """
-    session = ph.HSessionManager.get_or_create_default_session()
-    hda_asset = ph.HAsset(session, "hda/FourShapes.hda")
+    hda_asset = ph.HAsset(init_session, "hda/FourShapes.hda")
     asset_node = hda_asset.instantiate(node_name="TestObject").cook()
     asset_geos = asset_node.get_display_geos()
     _ps = asset_geos[0].get_attrib_data(ph.AttributeOwner.POINT, "P")

@@ -1,10 +1,12 @@
-"""[summary]
+# -*- coding: utf-8 -*-
+"""Example of extracting mesh data from hengine's node
+Author  : Maajor
+Email   : hello_myd@126.com
 """
 import pyhapi as ph
 
-
 def main():
-    """[summary]
+    """Main
     """
     session = ph.HSessionManager.get_or_create_default_session()
 

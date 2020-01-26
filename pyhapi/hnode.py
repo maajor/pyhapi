@@ -1,13 +1,57 @@
-"""Summary
+# -*- coding: utf-8 -*-
+"""Wrapper for houdini engine's node
+Author  : Maajor
+Email   : hello_myd@126.com
+
+HNodeBase:
+    A base class for houdini engine's node, including shared operation\
+        for setting input/output, setting/getting geometry, get node \
+            information etc.
+
+HNode:
+    A node user created for operator name or hda assets, could get/set\
+        params, press button and cook.
+
+HInputNode:
+    A node dedicated to marshall geom datas
+
+HExistingNode:
+    A node created by hengine itself, such as child node of node instantiated\
+        with HNode
+
+Example usage:
+
+import pyhapi as ph
+
+#create houdini engine session
+session = ph.HSessionManager.get_or_create_default_session()
+
+#create an inputnode where you can set geometry
+geo_inputnode = ph.HInputNode(session, "Cube")
+
+#create an geo sop
+another_box = ph.HNode(session, "geo", "ProgrammaticBox", parent_node=asset_node)
+
+#connect input node into geo sop's input
+another_box.connect_node_input(geo_inputnode)
+
+#disconnect input node
+another_box.disconnect_node_input(0).delete()
+
 """
 from . import hapi as HAPI
 from .hgeo import HGeoMesh
 
 class HNodeBase():
-    """[summary]
+    """A base class for houdini engine's node, including shared operation\
+        for setting input/output, setting/getting geometry, get node \
+            information etc.
 
-    Returns:
-        [type]: [description]
+    Attributes:
+        session (HSession): HEngine session containing this node
+        instantiated (bool): instantiated
+        node_id (int): Current node id
+        name (str): Current node name
     """
 
     def __init__(self, session):
@@ -17,55 +61,59 @@ class HNodeBase():
         self.name = ""
 
     def is_inited(self):
-        """Summary
+        """If this node is inited
 
         Returns:
-            TYPE: Description
+            bool: If this node is inited
         """
         if not self.instantiated:
             print("Asset Not Instantiated")
         return self.instantiated
 
     def connect_node_input(self, node_to_connect, input_index=0, output_index=0):
-        """Summary
+        """Connect another node into this node's input
 
         Args:
-            node_to_connect (HNode): Description
-            input_index (int, optional): Description
-            output_index (int, optional): Description
+            node_to_connect ([type]): The other node to connect to this node
+            input_index (int, optional): This node's input index. Defaults to 0.
+            output_index (int, optional): The other node's output index. Defaults to 0.
+
+        Returns:
+            HNodeBase: Current node itself
         """
         HAPI.connect_node_input(self.session.hapi_session,\
             self.node_id, node_to_connect.node_id, input_index, output_index)
         return self
 
     def disconnect_node_input(self, input_index=0):
-        """Summary
+        """Disconnet this node's input
 
         Args:
-            node_to_connect (HNode): Description
-            input_index (int, optional): Description
-            output_index (int, optional): Description
+            input_index (int, optional): This node's input index. Defaults to 0.
+
+        Returns:
+            HNodeBase: Current node itself
         """
         HAPI.disconnect_node_input(self.session.hapi_session, self.node_id, input_index)
         return self
 
     def get_node_input(self, input_index=0):
-        """[summary]
+        """Get information of input node
 
         Args:
-            input_index (int, optional): [description]. Defaults to 0.
+            input_index (int, optional): This node's input index. Defaults to 0.
 
         Returns:
-            [type]: [description]
+            HNodeBase: Input node
         """
         input_node_id = HAPI.query_node_input(self.session.hapi_session, self.node_id, input_index)
         return self.session.get_node(input_node_id)
 
     def get_child_nodes(self):
-        """[summary]
+        """Get children node information
 
         Returns:
-            [type]: [description]
+            [HNodeBase]: All children node of this node
         """
         child_count = HAPI.compose_child_node_list(self.session.hapi_session, self.node_id)
         child_nodes = HAPI.get_composed_child_node_list(self.session.hapi_session,\
@@ -73,15 +121,15 @@ class HNodeBase():
         return [self.session.get_node(node_id) for node_id in child_nodes]
 
     def set_geometry(self, geo):
-        """Summary
+        """Set an HGeo to this node
 
         Args:
-            geo (TYPE): Description
+            geo (HGeo): Geometry to set into this node
         """
         geo.commit_to_node(self.session, self.node_id)
 
     def delete(self):
-        """Summary
+        """Delete current node
         """
         try:
             HAPI.delete_node(self.session.hapi_session, self.node_id)
@@ -92,18 +140,18 @@ class HNodeBase():
 
 
 class HNode(HNodeBase):
-    """[summary]
 
-    Returns:
-        [type]: [description]
+    """A node user created for operator name or hda assets, could get/set\
+        params, press button and cook.
     """
     def __init__(self, session, operator_name, node_name, parent_node=None):
-        """Summary
+        """Init
 
         Args:
-            session (TYPE): Description
-            operator_name (TYPE): Description
-            node_name (TYPE): Description
+            session (HSession): Session where this asset is loaded
+            operator_name (str): Operator name of this node
+            node_name (str): Name of this node
+            parent_node (HNodeBase, optional): Parent node. Defaults to None.
         """
         super(HNode, self).__init__(session)
         self.node_id = HAPI.create_node(self.session.hapi_session, operator_name, node_name,\
@@ -112,11 +160,9 @@ class HNode(HNodeBase):
         self.instantiated = True
         self.session.nodes[self.node_id] = self
         self.name = node_name
-        self.get_params()
+        self._get_params()
 
-    def get_params(self):
-        """Summary
-        """
+    def _get_params(self):
         self.node_info = HAPI.get_node_info(self.session.hapi_session, self.node_id)
         self.param_info = HAPI.get_parameters(\
             self.session.hapi_session, self.node_id, self.node_info)
@@ -126,57 +172,63 @@ class HNode(HNodeBase):
             namestr = HAPI.get_string(self.session.hapi_session, namesh)
             self.param_id_dict[namestr] = i
 
-    def get_param_value(self, param_name):
-        """Summary
+    def get_parm_value(self, param_name):
+        """Get param value
 
         Args:
-            param_name (TYPE): Description
+            param_name (str): Parameter name to retrieve
 
         Returns:
-            TYPE: Description
+            int/float/str: Value of that param, depends on param type
         """
         if not self.is_inited():
             return None
         paramid = self.param_id_dict[param_name]
         paraminfo = self.param_info[paramid]
         if paraminfo.IsInt():
-            return HAPI.get_param_int_value(self.session.hapi_session, self.node_id, param_name)
+            return HAPI.get_parm_int_value(self.session.hapi_session, self.node_id, param_name)
         if paraminfo.isFloat():
-            return HAPI.get_param_float_value(self.session.hapi_session, self.node_id, param_name)
+            return HAPI.get_parm_float_value(self.session.hapi_session, self.node_id, param_name)
         if paraminfo.isString():
-            return HAPI.get_param_string_value(self.session.hapi_session, self.node_id, param_name)
+            return HAPI.get_parm_string_value(self.session.hapi_session, self.node_id, param_name)
         return None
 
-    def set_param_value(self, param_name, value):
-        """Summary
+    def set_parm_value(self, param_name, value):
+        """Set parameter value
 
         Args:
-            param_name (TYPE): Description
-            value (TYPE): Description
+            param_name ([type]): Parameter name to set
+            value (int/float/str): Value to set to that param, \
+                depends on param type
 
         Returns:
-            TYPE: Description
+            bool: set successed
         """
         if not self.is_inited():
-            return None
+            return False
         paramid = self.param_id_dict[param_name]
         paraminfo = self.param_info[paramid]
-        if paraminfo.IsInt():
-            return HAPI.set_param_int_value(self.session.hapi_session, \
-                self.node_id, param_name, value)
-        if paraminfo.isFloat():
-            return HAPI.set_param_float_value(\
-                self.session.hapi_session, self.node_id, param_name, value)
-        if paraminfo.isString():
-            return HAPI.set_param_string_value(self.session.hapi_session, \
-                self.node_id, paramid, value)
-        return None
+        try:
+            if paraminfo.IsInt():
+                HAPI.set_parm_int_value(self.session.hapi_session, \
+                    self.node_id, param_name, value)
+            if paraminfo.isFloat():
+                HAPI.set_parm_float_value(\
+                    self.session.hapi_session, self.node_id, param_name, value)
+            if paraminfo.isString():
+                HAPI.set_parm_string_value(self.session.hapi_session, \
+                    self.node_id, paramid, value)
+            return True
+        except AssertionError as error:
+            print("HAPI excecution failed")
+            print(error)
+            return False
 
     def get_display_geos(self):
-        """[summary]
+        """Get display geo of this node
 
         Returns:
-            [type]: [description]
+            [HGeo]: List of geos in this node
         """
         all_geos = []
         #asset_info = HAPI.GetAssetInfo(self.session.HAPISession, self.node_id)
@@ -192,10 +244,10 @@ class HNode(HNodeBase):
         return all_geos
 
     def cook(self):
-        """[summary]
+        """Cook this node in sync/blocking manner
 
         Returns:
-            [type]: [description]
+            HNodeBase: Current node itself
         """
         if not self.is_inited():
             return None
@@ -203,10 +255,10 @@ class HNode(HNodeBase):
         return self
 
     async def cook_async(self):
-        """Summary
+        """Cook this node in async/non-blocking manner
 
         Returns:
-            TYPE: Description
+            HNodeBase: Current node itself
         """
         if not self.is_inited():
             return
@@ -214,57 +266,39 @@ class HNode(HNodeBase):
             self.session.cook_option, self.node_id)
 
     def press_button(self, param_name):
-        """Summary
+        """Press button in this node in sync/blocking manner
 
         Args:
-            param_name (TYPE): Description
-
-        Returns:
-            TYPE: Description
+            param_name (str): Button name to press
         """
         if not self.is_inited():
             return
         #paramid = self.param_id_dict[param_name]
         #paraminfo = self.param_info[paramid]
-        HAPI.set_param_int_value(self.session.hapi_session, self.node_id, param_name, 1)
+        HAPI.set_parm_int_value(self.session.hapi_session, self.node_id, param_name, 1)
         HAPI.wait_cook(self.session.hapi_session, 5.0)
-        HAPI.set_param_int_value(self.session.hapi_session, self.node_id, param_name, 0)
+        HAPI.set_parm_int_value(self.session.hapi_session, self.node_id, param_name, 0)
 
     async def press_button_async(self, param_name):
-        """Summary
+        """Press button in this node in async/non-blocking manner
 
         Args:
-            param_name (TYPE): Description
-
-        Returns:
-            TYPE: Description
+            param_name (str): Button name to press
         """
         if not self.is_inited():
             return
         #paramid = self.param_id_dict[param_name]
         #paraminfo = self.param_info[paramid]
-        HAPI.set_param_int_value(self.session.hapi_session, self.node_id, param_name, 1)
+        HAPI.set_parm_int_value(self.session.hapi_session, self.node_id, param_name, 1)
         await HAPI.wait_cook_async(self.session.hapi_session, 5.0)
-        HAPI.set_param_int_value(self.session.hapi_session, self.node_id, param_name, 0)
+        HAPI.set_parm_int_value(self.session.hapi_session, self.node_id, param_name, 0)
 
 class HInputNode(HNodeBase):
 
-    """Summary
-
-    Attributes:
-        HAPISession (TYPE): Description
-        Instantiated (bool): Description
-        NodeId (TYPE): Description
-        Session (TYPE): Description
+    """A node dedicated to marshall geom datas
     """
 
     def __init__(self, session, node_name):
-        """Summary
-
-        Args:
-            session (TYPE): Description
-            node_name (TYPE): Description
-        """
         super(HInputNode, self).__init__(session)
         self.node_id = HAPI.create_input_node(self.session.hapi_session, node_name)
         self.instantiated = True
@@ -272,10 +306,8 @@ class HInputNode(HNodeBase):
         self.session.nodes[self.node_id] = self
 
 class HExistingNode(HNodeBase):
-    """[summary]
-
-    Args:
-        HNodeBase ([type]): [description]
+    """A node created by hengine itself, such as child node of node instantiated\
+        with HNode
     """
 
     def __init__(self, session, node_id):

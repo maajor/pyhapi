@@ -60,6 +60,7 @@ def close_session(session):
     assert result == HDATA.Result.SUCCESS,\
         "Close Session Failed with {0}".format(HDATA.Result(result).name)
 
+
 def start_thrift_named_pipe_server(server_options):
     """Wrapper for HAPI_StartThriftNamedPipeServer
 
@@ -99,10 +100,10 @@ def create_thrift_named_pipe_session(session):
             HDATA.Result(result).name)
 
 
-def initialize(session, cook_option, use_cooking_thread=True,\
-    cooking_thread_stack_size=-1, houdini_environment_files="",\
-    otl_search_path="", dso_search_path="",\
-    image_dso_search_path="", audio_dso_search_path=""):
+def initialize(session, cook_option, use_cooking_thread=True, # pylint: disable=too-many-arguments
+               cooking_thread_stack_size=-1, houdini_environment_files="",
+               otl_search_path="", dso_search_path="",
+               image_dso_search_path="", audio_dso_search_path=""):
     """Wrapper for HAPI_Initialize
 
     Create the asset manager, set up environment variables, \
@@ -338,6 +339,7 @@ async def cook_node_async(session, cook_option, node_id):
         "CookNodeAsync Failed with {0}".format(HDATA.Result(result).name)
     await wait_cook_async(session)
 
+
 def wait_cook(session, status_report_interval=1):
     """An sync call to wait for cooking return result
 
@@ -348,6 +350,7 @@ def wait_cook(session, status_report_interval=1):
     """
     loop = asyncio.get_event_loop()
     loop.run_until_complete(wait_cook_async(session, status_report_interval))
+
 
 async def wait_cook_async(session, status_report_interval=1):
     """An async call to wait for cooking return result
@@ -380,6 +383,7 @@ async def wait_cook_async(session, status_report_interval=1):
         "CookNode Failed with {0} and Cook Status is {1}".\
         format(HDATA.Result(cook_result).name,
                HDATA.State(cook_status.value).name)
+
 
 def query_node_input(session, node_id, input_index=0):
     """Wrapper for HAPI_QueryNodeInput
@@ -457,8 +461,8 @@ def get_composed_child_node_list(session, node_id, count):
     return id_buffer
 
 
-def compose_child_node_list(session, node_id, node_type=HDATA.NodeType.ANY,\
-    node_flag=HDATA.NodeFlags.ANY):
+def compose_child_node_list(session, node_id, node_type=HDATA.NodeType.ANY,
+                            node_flag=HDATA.NodeFlags.ANY):
     """Wrapper for HAPI_ComposeChildNodeList
     Compose a list of child nodes based on given filters.
 
@@ -605,15 +609,16 @@ def get_asset_info(session, node_id):
 
 
 def get_parameters(session, node_id, node_info):
-    """[summary]
+    """Wrapper for HAPI_GetParameters
+    Fill an array of HAPI_ParmInfo structs with parameter information from the asset instance node.
 
     Args:
-        session ([type]): [description]
-        node_id ([type]): [description]
-        node_info ([type]): [description]
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        node_info (NodeInfo): Nodeinfo of querying node
 
     Returns:
-        [type]: [description]
+        Array of ParmInfo: Array of parminfo of querying node
     """
     params = (HDATA.ParmInfo * node_info.parmCount)()
     result = HAPI_LIB.HAPI_GetParameters(
@@ -623,24 +628,18 @@ def get_parameters(session, node_id, node_info):
     return params
 
 
-def get_param_int_value(session, node_id, parmname, tupleid=0):
-    """Summary
+def get_parm_int_value(session, node_id, parmname, tupleid=0):
+    """Wrapper for HAPI_GetParmIntValue
+    Get single parm int value by name.
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    node_id : TYPE
-        Description
-    parmname : TYPE
-        Description
-    tupleid : int, optional
-        Description
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        parmname (str): The parm name.
+        tupleid (int, optional): Index within the parameter's values tuple.. Defaults to 0.
 
-    Returns
-    -------
-    TYPE
-        Description
+    Returns:
+        int: value of querying param
     """
     val = c_int32()
     result = HAPI_LIB.HAPI_GetParmIntValue(
@@ -651,24 +650,18 @@ def get_param_int_value(session, node_id, parmname, tupleid=0):
     return val.value
 
 
-def get_param_float_value(session, node_id, parmname, tupleid=0):
-    """Summary
+def get_parm_float_value(session, node_id, parmname, tupleid=0):
+    """Wrapper for HAPI_GetParmFloatValue
+    Get single parm float value by name.
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    node_id : TYPE
-        Description
-    parmname : TYPE
-        Description
-    tupleid : int, optional
-        Description
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        parmname (str): The parm name.
+        tupleid (int, optional): Index within the parameter's values tuple.. Defaults to 0.
 
-    Returns
-    -------
-    TYPE
-        Description
+    Returns:
+        float: value of querying param
     """
     val = c_float()
     result = HAPI_LIB.HAPI_GetParmFloatValue(
@@ -679,24 +672,18 @@ def get_param_float_value(session, node_id, parmname, tupleid=0):
     return val.value
 
 
-def get_param_string_value(session, node_id, parmname, tupleid=0):
-    """Summary
+def get_parm_string_value(session, node_id, parmname, tupleid=0):
+    """Wrapper for HAPI_GetParmStringValue
+    Get single parm string value by name.
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    node_id : TYPE
-        Description
-    parmname : TYPE
-        Description
-    tupleid : int, optional
-        Description
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        parmname (str): The parm name.
+        tupleid (int, optional): Index within the parameter's values tuple.. Defaults to 0.
 
-    Returns
-    -------
-    TYPE
-        Description
+    Returns:
+        str: value of querying param
     """
     stringsh = c_int32()
     result = HAPI_LIB.HAPI_GetParmStringValue(
@@ -707,26 +694,16 @@ def get_param_string_value(session, node_id, parmname, tupleid=0):
     return get_string(session, stringsh)
 
 
-def set_param_int_value(session, node_id, parmname, value, tupleid=0):
-    """Summary
+def set_parm_int_value(session, node_id, parmname, value, tupleid=0):
+    """Wrapper for HAPI_SetParmIntValue
+    Set single parm int value by name.
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    node_id : TYPE
-        Description
-    parmname : TYPE
-        Description
-    value : TYPE
-        Description
-    tupleid : int, optional
-        Description
-
-    Returns
-    -------
-    TYPE
-        Description
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        parmname (str): The parm name.
+        value (int): Value to set to parm
+        tupleid (int, optional): Index within the parameter's values tuple.. Defaults to 0.
     """
     result = HAPI_LIB.HAPI_SetParmIntValue(
         byref(session), node_id, c_char_p(parmname.encode('utf-8')), tupleid, value)
@@ -735,26 +712,16 @@ def set_param_int_value(session, node_id, parmname, value, tupleid=0):
             HDATA.Result(result).name)
 
 
-def set_param_float_value(session, node_id, parmname, value, tupleid=0):
-    """Summary
+def set_parm_float_value(session, node_id, parmname, value, tupleid=0):
+    """Wrapper for HAPI_SetParmFloatValue
+    Set single parm float value by name.
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    node_id : TYPE
-        Description
-    parmname : TYPE
-        Description
-    value : TYPE
-        Description
-    tupleid : int, optional
-        Description
-
-    Returns
-    -------
-    TYPE
-        Description
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        parmname (str): The parm name.
+        value (float): Value to set to parm
+        tupleid (int, optional): Index within the parameter's values tuple.. Defaults to 0.
     """
     result = HAPI_LIB.HAPI_SetParmFloatValue(
         byref(session), node_id, c_char_p(parmname.encode('utf-8')), tupleid, value)
@@ -763,26 +730,16 @@ def set_param_float_value(session, node_id, parmname, value, tupleid=0):
             HDATA.Result(result).name)
 
 
-def set_param_string_value(session, node_id, parmid, value, tupleid=0):
-    """Summary
+def set_parm_string_value(session, node_id, parmid, value, tupleid=0):
+    """Wrapper for HAPI_SetParmStringValue
+    Set single parm str value by name.
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    node_id : TYPE
-        Description
-    parmid : TYPE
-        Description
-    value : TYPE
-        Description
-    tupleid : int, optional
-        Description
-
-    Returns
-    -------
-    TYPE
-        Description
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        parmname (str): The parm name.
+        value (str): Value to set to parm
+        tupleid (int, optional): Index within the parameter's values tuple.. Defaults to 0.
     """
     result = HAPI_LIB.HAPI_SetParmStringValue(
         byref(session), node_id, c_char_p(value.encode('utf-8')), parmid, tupleid)
@@ -792,21 +749,13 @@ def set_param_string_value(session, node_id, parmid, value, tupleid=0):
 
 
 def set_part_info(session, node_id, part_info):
-    """Summary
+    """Wrapper for HAPI_SetPartInfo
+    Set the main part info struct
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    node_id : TYPE
-        Description
-    part_info : TYPE
-        Description
-
-    Returns
-    -------
-    TYPE
-        Description
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        part_info ([type]): [description]
     """
     result = HAPI_LIB.HAPI_SetPartInfo(
         byref(session), node_id, 0, byref(part_info))
@@ -815,12 +764,13 @@ def set_part_info(session, node_id, part_info):
 
 
 def set_curve_info(session, node_id, curve_info):
-    """[summary]
+    """Wrapper for HAPI_SetCurveInfo
+    Set meta-data for the curve mesh, including the curve type, order, and periodicity.
 
     Args:
-        session ([type]): [description]
-        node_id ([type]): [description]
-        curve_info ([type]): [description]
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        curve_info (CurveInfo): CurveInfo to set to node
     """
     result = HAPI_LIB.HAPI_SetCurveInfo(
         byref(session), node_id, 0, byref(curve_info))
@@ -829,13 +779,14 @@ def set_curve_info(session, node_id, curve_info):
 
 
 def set_curve_counts(session, node_id, part_id, curve_count):
-    """[summary]
+    """Wrapper for HAPI_SetCurveCounts
+    Set the number of vertices for each curve in the part.
 
     Args:
-        session ([type]): [description]
-        node_id ([type]): [description]
-        part_id ([type]): [description]
-        curve_count ([type]): [description]
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        part_id (int): Currently unused. Input asset geos are assumed to have only one part.
+        curve_count (int): The number of cvs each curve contains.
     """
     intp = POINTER(c_int)
     result = HAPI_LIB.HAPI_SetCurveCounts(
@@ -846,13 +797,14 @@ def set_curve_counts(session, node_id, part_id, curve_count):
 
 
 def set_curve_knots(session, node_id, part_id, curve_knots):
-    """[summary]
+    """Wrapper for HAPI_SetCurveKnots
+    Set the knots of the curves in this part.
 
     Args:
-        session ([type]): [description]
-        node_id ([type]): [description]
-        part_id ([type]): [description]
-        curve_knots ([type]): [description]
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        part_id (int): Currently unused. Input asset geos are assumed to have only one part.
+        curve_knots (np.ndarray(int)): The knots of each curve.
     """
     if not isinstance(curve_knots, np.ndarray):
         return
@@ -866,23 +818,14 @@ def set_curve_knots(session, node_id, part_id, curve_knots):
 
 
 def add_attribute(session, node_id, name, attrib_info):
-    """Summary
+    """Wrapper for HAPI_AddAttribute
+    Add an attribute to node
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    node_id : TYPE
-        Description
-    name : TYPE
-        Description
-    attrib_info : TYPE
-        Description
-
-    Returns
-    -------
-    TYPE
-        Description
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        name (str): Attribute name
+        attrib_info (AttributeInfo): Attribute property to add
     """
     result = HAPI_LIB.HAPI_AddAttribute(
         byref(session), node_id, 0, c_char_p(name.encode('utf-8')), byref(attrib_info))
@@ -891,25 +834,15 @@ def add_attribute(session, node_id, name, attrib_info):
 
 
 def set_attribute_float_data(session, node_id, name, attrib_info, data):
-    """Summary
+    """Wrapper for HAPI_SetAttributeFloatData
+    Set attribute float data.
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    node_id : TYPE
-        Description
-    name : TYPE
-        Description
-    attrib_info : TYPE
-        Description
-    data : TYPE
-        Description
-
-    Returns
-    -------
-    TYPE
-        Description
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        name (str): Attribute name
+        attrib_info (AttributeInfo): Attribute property to set
+        data (np.ndarry(float)): Data to set in as attribute
     """
     floatp = POINTER(c_float)
     result = HAPI_LIB.HAPI_SetAttributeFloatData(
@@ -921,25 +854,15 @@ def set_attribute_float_data(session, node_id, name, attrib_info, data):
 
 
 def set_attribute_float64_data(session, node_id, name, attrib_info, data):
-    """Summary
+    """Wrapper for HAPI_SetAttributeFloat64Data
+    Set attribute float64 data.
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    node_id : TYPE
-        Description
-    name : TYPE
-        Description
-    attrib_info : TYPE
-        Description
-    data : TYPE
-        Description
-
-    Returns
-    -------
-    TYPE
-        Description
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        name (str): Attribute name
+        attrib_info (AttributeInfo): Attribute property to set
+        data (np.ndarry(float64)): Data to set in as attribute
     """
     floatp = POINTER(c_double)
     result = HAPI_LIB.HAPI_SetAttributeFloat64Data(
@@ -951,25 +874,15 @@ def set_attribute_float64_data(session, node_id, name, attrib_info, data):
 
 
 def set_attribute_int64_data(session, node_id, name, attrib_info, data):
-    """Summary
+    """Wrapper for HAPI_SetAttributeInt64Data
+    Set attribute int64 data.
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    node_id : TYPE
-        Description
-    name : TYPE
-        Description
-    attrib_info : TYPE
-        Description
-    data : TYPE
-        Description
-
-    Returns
-    -------
-    TYPE
-        Description
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        name (str): Attribute name
+        attrib_info (AttributeInfo): Attribute property to set
+        data (np.ndarry(int64)): Data to set in as attribute
     """
     intp = POINTER(c_int64)
     result = HAPI_LIB.HAPI_SetAttributeInt64Data(
@@ -981,25 +894,15 @@ def set_attribute_int64_data(session, node_id, name, attrib_info, data):
 
 
 def set_attribute_int_data(session, node_id, name, attrib_info, data):
-    """Summary
+    """Wrapper for HAPI_SetAttributeIntData
+    Set attribute int data.
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    node_id : TYPE
-        Description
-    name : TYPE
-        Description
-    attrib_info : TYPE
-        Description
-    data : TYPE
-        Description
-
-    Returns
-    -------
-    TYPE
-        Description
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        name (str): Attribute name
+        attrib_info (AttributeInfo): Attribute property to set
+        data (np.ndarry(int)): Data to set in as attribute
     """
     intp = POINTER(c_int)
     result = HAPI_LIB.HAPI_SetAttributeIntData(
@@ -1011,25 +914,15 @@ def set_attribute_int_data(session, node_id, name, attrib_info, data):
 
 
 def set_attribute_string_data(session, node_id, name, attrib_info, data):
-    """Summary
+    """Wrapper for HAPI_SetAttributeStringData
+    Set attribute str data.
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    node_id : TYPE
-        Description
-    name : TYPE
-        Description
-    attrib_info : TYPE
-        Description
-    data : TYPE
-        Description
-
-    Returns
-    -------
-    TYPE
-        Description
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        name (str): Attribute name
+        attrib_info (AttributeInfo): Attribute property to set
+        data (str): Data to set in as attribute
     """
     charp = POINTER(c_char_p)
     result = HAPI_LIB. HAPI_SetAttributeStringData(
@@ -1049,18 +942,19 @@ STORAGE_TYPE_TO_SET_ATTRIB = {
 }
 
 
-def get_attribute_names(session, node_id, part_info,\
-    attrib_type=HDATA.AttributeOwner.POINT):
-    """[summary]
+def get_attribute_names(session, node_id, part_info,
+                        attrib_type=HDATA.AttributeOwner.POINT):
+    """Wrapper for HAPI_GetAttributeNames
+    Get list of attribute names by attribute owner. \
+        Note that the name string handles are only valid \
+            until the next time this function is called.
 
     Args:
-        session ([type]): [description]
-        node_id ([type]): [description]
-        part_info ([type]): [description]
-        attrib_type ([type], optional): [description].
-
-    Returns:
-        [type]: [description]
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        part_info (PartInfo): The part info
+        attrib_type (AttributeOwner, optional): Type of attribute. \
+            Defaults to HDATA.AttributeOwner.POINT.
     """
     attrib_count = part_info.attributeCounts[attrib_type]
     string_handle_buffer = (c_int32 * attrib_count)()
@@ -1077,17 +971,18 @@ def get_attribute_names(session, node_id, part_info,\
 
 
 def get_attribute_info(session, node_id, part_id, name, attrib_type):
-    """[summary]
+    """Wrapper for HAPI_GetAttributeInfo
+    Get the attribute info struct for the attribute specified by name.
 
     Args:
-        session ([type]): [description]
-        node_id ([type]): [description]
-        part_id ([type]): [description]
-        name ([type]): [description]
-        attrib_type ([type]): [description]
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        part_info (PartInfo): The part info
+        name (str): Name of attribute querying
+        attrib_type (AttributeOwner, optional): Type of attribute.
 
     Returns:
-        [type]: [description]
+        AttributeInfo: AttributeInfo of querying named attribute in node
     """
     attrib_info = HDATA.AttributeInfo()
     result = HAPI_LIB.HAPI_GetAttributeInfo(
@@ -1100,20 +995,21 @@ def get_attribute_info(session, node_id, part_id, name, attrib_type):
 
 
 def get_attribute_int_data(session, node_id, part_id, name, attrib_info):
-    """[summary]
+    """Wrapper for HAPI_GetAttributeIntData
+    Get attribute integer data.
 
     Args:
-        session ([type]): [description]
-        node_id ([type]): [description]
-        part_id ([type]): [description]
-        name ([type]): [description]
-        attrib_info ([type]): [description]
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        part_id (int): Part Id
+        name (str): Name of attribute querying
+        attrib_info (AttributeInfo): AttributeInfo of querying named attribute in node
 
     Returns:
-        [type]: [description]
+        np.ndarray(int): data of querying named attribute
     """
     data_buffer = (c_int32 * (attrib_info.count * attrib_info.tupleSize))()
-    result = HAPI_LIB.HAPI_GetAttributeFloatData(
+    result = HAPI_LIB.HAPI_GetAttributeIntData(
         byref(session), node_id, part_id, c_char_p(name.encode('utf-8')),
         byref(attrib_info), -1, byref(data_buffer), 0, attrib_info.count)
     assert result == HDATA.Result.SUCCESS,\
@@ -1124,20 +1020,21 @@ def get_attribute_int_data(session, node_id, part_id, name, attrib_info):
 
 
 def get_attribute_int64_data(session, node_id, part_id, name, attrib_info):
-    """[summary]
+    """Wrapper for HAPI_GetAttributeInt64Data
+    Get attribute int64 data.
 
     Args:
-        session ([type]): [description]
-        node_id ([type]): [description]
-        part_id ([type]): [description]
-        name ([type]): [description]
-        attrib_info ([type]): [description]
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        part_id (int): Part Id
+        name (str): Name of attribute querying
+        attrib_info (AttributeInfo): AttributeInfo of querying named attribute in node
 
     Returns:
-        [type]: [description]
+        np.ndarray(int64): data of querying named attribute
     """
     data_buffer = (c_int64 * (attrib_info.count * attrib_info.tupleSize))()
-    result = HAPI_LIB.HAPI_GetAttributeFloatData(
+    result = HAPI_LIB.HAPI_GetAttributeInt64Data(
         byref(session), node_id, part_id, c_char_p(name.encode('utf-8')),
         byref(attrib_info), -1, byref(data_buffer), 0, attrib_info.count)
     assert result == HDATA.Result.SUCCESS,\
@@ -1148,17 +1045,18 @@ def get_attribute_int64_data(session, node_id, part_id, name, attrib_info):
 
 
 def get_attribute_float_data(session, node_id, part_id, name, attrib_info):
-    """[summary]
+    """Wrapper for HAPI_GetAttributeFloatData
+    Get attribute float data.
 
     Args:
-        session ([type]): [description]
-        node_id ([type]): [description]
-        part_id ([type]): [description]
-        name ([type]): [description]
-        attrib_info ([type]): [description]
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        part_id (int): Part Id
+        name (str): Name of attribute querying
+        attrib_info (AttributeInfo): AttributeInfo of querying named attribute in node
 
     Returns:
-        [type]: [description]
+        np.ndarray(float): data of querying named attribute
     """
     data_buffer = (c_float * (attrib_info.count * attrib_info.tupleSize))()
     result = HAPI_LIB.HAPI_GetAttributeFloatData(
@@ -1172,20 +1070,21 @@ def get_attribute_float_data(session, node_id, part_id, name, attrib_info):
 
 
 def get_attribute_float64_data(session, node_id, part_id, name, attrib_info):
-    """[summary]
+    """Wrapper for HAPI_GetAttributeFloat64Data
+    Get attribute float64 data.
 
     Args:
-        session ([type]): [description]
-        node_id ([type]): [description]
-        part_id ([type]): [description]
-        name ([type]): [description]
-        attrib_info ([type]): [description]
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        part_id (int): Part Id
+        name (str): Name of attribute querying
+        attrib_info (AttributeInfo): AttributeInfo of querying named attribute in node
 
     Returns:
-        [type]: [description]
+        np.ndarray(float64): data of querying named attribute
     """
     data_buffer = (c_double * (attrib_info.count * attrib_info.tupleSize))()
-    result = HAPI_LIB.HAPI_GetAttributeFloatData(
+    result = HAPI_LIB.HAPI_GetAttributeFloat64Data(
         byref(session), node_id, part_id, c_char_p(name.encode('utf-8')),
         byref(attrib_info), -1, byref(data_buffer), 0, attrib_info.count)
     assert result == HDATA.Result.SUCCESS,\
@@ -1196,20 +1095,21 @@ def get_attribute_float64_data(session, node_id, part_id, name, attrib_info):
 
 
 def get_attribute_string_data(session, node_id, part_id, name, attrib_info):
-    """[summary]
+    """Wrapper for HAPI_GetAttributeStringData
+    Get attribute string data.
 
     Args:
-        session ([type]): [description]
-        node_id ([type]): [description]
-        part_id ([type]): [description]
-        name ([type]): [description]
-        attrib_info ([type]): [description]
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        part_id (int): Part Id
+        name (str): Name of attribute querying
+        attrib_info (AttributeInfo): AttributeInfo of querying named attribute in node
 
     Returns:
-        [type]: [description]
+        np.ndarray(str): data of querying named attribute
     """
     data_buffer = (c_char_p * (attrib_info.count * attrib_info.tupleSize))()
-    result = HAPI_LIB.HAPI_GetAttributeFloatData(
+    result = HAPI_LIB.HAPI_GetAttributeStringData(
         byref(session), node_id, part_id, c_char_p(name.encode('utf-8')),
         byref(attrib_info), -1, byref(data_buffer), 0, attrib_info.count)
     assert result == HDATA.Result.SUCCESS,\
@@ -1229,21 +1129,15 @@ STORAGE_TYPE_TO_GET_ATTRIB = {
 
 
 def set_vertex_list(session, node_id, vertex_list_array):
-    """Summary
+    """Wrapper for HAPI_SetVertexList
+    Set array containing the vertex-point associations where \
+        the ith element in the array is the point index the \
+            ith vertex associates with.
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    node_id : TYPE
-        Description
-    vertex_list_array : TYPE
-        Description
-
-    Returns
-    -------
-    TYPE
-        Description
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        vertex_list_array (ndarray(int)): Vertex list to set
     """
     intp = POINTER(c_int)
     result = HAPI_LIB.HAPI_SetVertexList(
@@ -1254,21 +1148,14 @@ def set_vertex_list(session, node_id, vertex_list_array):
 
 
 def set_face_counts(session, node_id, face_counts_array):
-    """Summary
+    """Wrapper for HAPI_SetFaceCounts
+    Set the array of faces where the nth integer in the array \
+        is the number of vertices the nth face has.
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    node_id : TYPE
-        Description
-    face_counts_array : TYPE
-        Description
-
-    Returns
-    -------
-    TYPE
-        Description
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        face_counts_array (ndarray(int)): face count to set
     """
     intp = POINTER(c_int)
     result = HAPI_LIB.HAPI_SetFaceCounts(
@@ -1279,37 +1166,35 @@ def set_face_counts(session, node_id, face_counts_array):
 
 
 def commit_geo(session, node_id):
-    """Summary
+    """Wrapper for HAPI_CommitGeo
+    Commit the current input geometry to the cook engine. \
+        Nodes that use this geometry node will re-cook using the input \
+            geometry given through the geometry setter API calls.
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    node_id : TYPE
-        Description
+    Args:
+        session (int64): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
     """
     result = HAPI_LIB.HAPI_CommitGeo(byref(session), node_id)
     assert result == HDATA.Result.SUCCESS,\
         "CommitGeo Failed with {0}".format(HDATA.Result(result).name)
 
 
-def save_hip_file(session, hipname, lock_nodes=False):
-    '''
-    Attributes
-    ----------
-    session : HAPI_Session
-    hipname : string
-    lock_nodes : bool
+def save_hip_file(session, hipname, lock_nodes=True):
+    """Wrapper for HAPI_SaveHIPFile
+    Saves a .hip file of the current Houdini scene.
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    hipname : TYPE
-        Description
-    lock_nodes : bool, optional
-        Description
-    '''
+    Args:
+        session (int64): The session of Houdini you are interacting with.
+        hipname (str): Name of saved hip file
+        lock_nodes (bool, optional): Specify whether to lock all SOP nodes \
+            before saving the scene file. This way, when you load the scene \
+                file you can see exactly the state of each SOP at the time it \
+                    was saved instead of relying on the re-cook to accurately \
+                        reproduce the state. It does, however, take a lot more \
+                            space and time locking all nodes like this.\
+                                Defaults to False.
+    """
     result = HAPI_LIB.HAPI_SaveHIPFile(
         byref(session), c_char_p(hipname.encode('utf-8')), c_bool(lock_nodes))
     assert result == HDATA.Result.SUCCESS,\
@@ -1317,12 +1202,10 @@ def save_hip_file(session, hipname, lock_nodes=False):
 
 
 def get_cook_options():
-    """Summary
+    """Get defalut cook option
 
-    Returns
-    -------
-    TYPE
-        Description
+    Returns:
+        CookOptions: defalut cook option
     """
     cook_options = HDATA.CookOptions()
     cook_options.splitGeosByGroup = True
@@ -1339,88 +1222,71 @@ def get_cook_options():
     return cook_options
 
 
-def _get_string_buf_length(session, string_handle, buffer_length):
-    """Summary
+def _get_string_buf_length(session, string_handle):
+    """Wrapper for HAPI_GetStringBufLength
+    Gives back the string length of the string with the given handle.
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    string_handle : TYPE
-        Description
-    buffer_length : TYPE
-        Description
+    Args:
+        session (int64): The session of Houdini you are interacting with.
+        string_handle (int): string handler of querying string
 
-    Returns
-    -------
-    TYPE
-        Description
-    """
-    return HAPI_LIB.HAPI_GetStringBufLength(byref(session), string_handle, byref(buffer_length))
-
-
-def _get_string(session, string_handle, string, length):
-    """Summary
-
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    string_handle : TYPE
-        Description
-    string : TYPE
-        Description
-    length : TYPE
-        Description
-
-    Returns
-    -------
-    TYPE
-        Description
-    """
-    return HAPI_LIB.HAPI_GetString(byref(session), string_handle, string, length)
-
-
-def get_string(session, string_handle):
-    """Summary
-
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    string_handle : TYPE
-        Description
-
-    Returns
-    -------
-    TYPE
-        Description
+    Returns:
+        int: string char length
     """
     buffer_length = c_int32()
-    _get_string_buf_length(session, string_handle, buffer_length)
-    buffers = create_string_buffer(buffer_length.value)
-    _get_string(session, string_handle, buffers, buffer_length)
+    result = HAPI_LIB.HAPI_GetStringBufLength(byref(session), string_handle, byref(buffer_length))
+    assert result == HDATA.Result.SUCCESS,\
+        "GetStringBufLength Failed with {0}".format(HDATA.Result(result).name)
+    return buffer_length.value
 
+
+def _get_string(session, string_handle, length):
+    """Wrapper for HAPI_GetString
+    Gives back the string value of the string with the given handle.
+
+    Args:
+        session (int64): The session of Houdini you are interacting with.
+        string_handle (int): string handler of querying string
+        length (int): string char length
+
+    Returns:
+        str: string queried
+    """
+    buffers = create_string_buffer(length)
+    result = HAPI_LIB.HAPI_GetString(byref(session), string_handle, buffers, length)
+    assert result == HDATA.Result.SUCCESS,\
+        "GetString Failed with {0}".format(HDATA.Result(result).name)
     return buffers.value.decode()
 
 
-def _get_status_string(session, status=HDATA.StatusType.COOK_RESULT,\
-    verbosity=HDATA.StatusVerbosity.ERRORS):
-    """Summary
+def get_string(session, string_handle):
+    """Get literal string from hengine's string handler
 
-    Parameters
-    ----------
-    session : TYPE
-        Description
-    status : TYPE, optional
-        Description
-    verbosity : TYPE, optional
-        Description
+    Args:
+        session (int64): The session of Houdini you are interacting with.
+        string_handle (int): string handler of querying string
 
-    Returns
-    -------
-    TYPE
-        Description
+    Returns:
+        str: string queried
+    """
+    buffer_length = _get_string_buf_length(session, string_handle)
+    return _get_string(session, string_handle, buffer_length)
+
+
+def _get_status_string(session, status=HDATA.StatusType.COOK_RESULT,
+                       verbosity=HDATA.StatusVerbosity.ERRORS):
+    """Get current status string
+    Wrapper for HAPI_GetStatusString and HAPI_GetStatusStringBufLength
+
+    Args:
+        session (int64): The session of Houdini you are interacting with.
+        status (StatusType, optional): StatusType querying. \
+            Defaults to HDATA.StatusType.COOK_RESULT.
+        verbosity (StatusVerbosity, optional): Preferred verbosity level. \
+            Defaults to HDATA.StatusVerbosity.ERRORS.
+
+    Returns:
+        str: status string
     """
     buffer_length = c_int32()
     result = HAPI_LIB.HAPI_GetStatusStringBufLength(
@@ -1434,4 +1300,4 @@ def _get_status_string(session, status=HDATA.StatusType.COOK_RESULT,\
     assert result == HDATA.Result.SUCCESS,\
         "GetStatusString Failed with {0}".format(
             HDATA.Result(result).name)
-    return buffers.value
+    return buffers.value.decode()

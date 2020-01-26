@@ -1,17 +1,20 @@
-"""[summary]
+# -*- coding: utf-8 -*-
+"""Example of connect, disconnect, add node andd delete node
+Author  : Maajor
+Email   : hello_myd@126.com
 """
 import pyhapi as ph
 
 def log_childnodes(asset_node):
-    """[summary]
+    """Log node's child nodes name
     Args:
-        asset_node ([type]): [description]
+        asset_node (HNodeBase): A node to log its children
     """
     print("Child nodes include: {0}".format(",".join([node.name\
         for node in asset_node.get_child_nodes()])))
 
 def main():
-    """[summary]
+    """Main
     """
     session = ph.HSessionManager.get_or_create_default_session()
 

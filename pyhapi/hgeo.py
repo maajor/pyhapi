@@ -1,4 +1,52 @@
-"""Summary
+# -*- coding: utf-8 -*-
+"""Wrapper for houdini engine's geometry.
+Author  : Maajor
+Email   : hello_myd@126.com
+
+HGeo:
+    An base class for houdini engine's geometry, including shared operation\
+        for setting and getting attributes. It could derived HGeoMesh\
+        for handling mesh, HGeoCurve for handling curve, HGeoVolume for \
+            handling volume data.
+
+HGeoMesh:
+    An object containing mesh data
+
+HGeoCurve:
+    An object containing curve data
+
+Example usage:
+
+import pyhapi as ph
+
+#create houdini engine session
+session = ph.HSessionManager.get_or_create_default_session()
+
+#create an inputnode where you can set geometry
+geo_inputnode = ph.HInputNode(session, "Cube")
+
+#create a geomesh
+cube_geo = ph.HGeoMesh(
+    vertices=np.array(
+        [[0.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 1.0, 1.0],
+            [1.0, 0.0, 0.0],
+            [1.0, 0.0, 1.0],
+            [1.0, 1.0, 0.0],
+            [1.0, 1.0, 1.0]], dtype=np.float32),
+    faces=np.array(
+        [[0, 2, 6, 4],
+            [2, 3, 7, 6],
+            [2, 0, 1, 3],
+            [1, 5, 7, 3],
+            [5, 4, 6, 7],
+            [0, 4, 5, 1]], dtype=np.int32))
+
+#set this geomesh as geometry of inputnode
+geo_inputnode.set_geometry(cube_geo)
+
 """
 import numpy as np
 
@@ -7,19 +55,24 @@ from . import hapi as HAPI
 
 class HGeo():
 
-    """Summary
+    """An base class for houdini engine's geometry, including shared operation\
+        for setting and getting attributes. It could derived HGeoMesh\
+            for handling mesh, HGeoCurve for handling curve, HGeoVolume for \
+                handling volume data.
 
     Attributes:
-        Attribs (list): Description
-        FaceCount (int): Description
-        PartInfo (TYPE): Description
-        PointCount (int): Description
-        VertexCount (int): Description
+        part_info (PartInfo): geom info of this part
+        point_count (int): number of points in this geo
+        vertex_count (int): number of vertices in this geo
+        face_count (int): number of faces in this geo
+        detail_count (int): number of details in this geo, should be 1
+        attribs (dict((int,str),(AttributeInfo,str,np.ndarray)): attribute's name\
+            to attribute's actual data
+        type_to_add_attrib (dict(int,func)): attribute's type to the function to \
+            set the attribute data into hengine
     """
 
     def __init__(self):
-        """Summary
-        """
         self.part_info = HDATA.PartInfo()
         self.point_count = 0
         self.vertex_count = 0
@@ -34,24 +87,25 @@ class HGeo():
             HDATA.AttributeOwner.DETAIL: self.add_detail_attrib}
 
     def add_attrib(self, attrib_type, name, data):
-        """[summary]
+        """Add attribute data to geo, should provide attribute's\
+            type, name and data
 
         Args:
-            attrib_type ([type]): [description]
-            name ([type]): [description]
-            data ([type]): [description]
+            attrib_type (AttributeOwner): Type of the attribute
+            name (str): name of the attribute
+            data (ndarray(,)): Attribute data, should be 2D, 1st dims\
+                corresponding to each item in that attribute, ptnum/vtnum\
+                    primnum etc, 2nd dim should be tuple size of this attribute
         """
         self.type_to_add_attrib[attrib_type](name, data)
 
     def add_point_attrib(self, name, data):
-        """Summary
+        """Add point attribute data to geo
 
         Args:
-            name (TYPE): Description
-            data (TYPE): Description
-
-        Returns:
-            TYPE: Description
+            name (str): name of the attribute
+            data (ndarray(,)): Attribute data, should be 2D, 1st dims\
+                equals number of points, 2nd dim should be tuple size of this attribute
         """
         count, tuple_size = data.shape
         if count != self.point_count:
@@ -71,14 +125,12 @@ class HGeo():
             attrib_info, name, data)
 
     def add_vertex_attrib(self, name, data):
-        """Summary
+        """Add vertex attribute data to geo
 
         Args:
-            name (TYPE): Description
-            data (TYPE): Description
-
-        Returns:
-            TYPE: Description
+            name (str): name of the attribute
+            data (ndarray(,)): Attribute data, should be 2D, 1st dims\
+                equals number of vertices, 2nd dim should be tuple size of this attribute
         """
         count, tuple_size = data.shape
         if count != self.vertex_count:
@@ -98,14 +150,12 @@ class HGeo():
             attrib_info, name, data)
 
     def add_prim_attrib(self, name, data):
-        """Summary
+        """Add prim attribute data to geo
 
         Args:
-            name (TYPE): Description
-            data (TYPE): Description
-
-        Returns:
-            TYPE: Description
+            name (str): name of the attribute
+            data (ndarray(,)): Attribute data, should be 2D, 1st dims\
+                equals number of faces, 2nd dim should be tuple size of this attribute
         """
         count, tuple_size = data.shape
         if count != self.face_count:
@@ -125,11 +175,12 @@ class HGeo():
             attrib_info, name, data)
 
     def add_detail_attrib(self, name, data):
-        """Summary
+        """Add detail attribute data to geo
 
         Args:
-            name (TYPE): Description
-            data (TYPE): Description
+            name (str): name of the attribute
+            data (ndarray(,)): Attribute data, should be 2D, 1st dims\
+                should be 1, 2nd dim should be tuple size of this attribute
         """
         count, tuple_size = data.shape
         if count != self.detail_count:
@@ -149,23 +200,23 @@ class HGeo():
             attrib_info, name, data)
 
     def get_attrib_data(self, attrib_type, name):
-        """[summary]
+        """Get attribute data of certain type and name
 
         Args:
-            attrib_type ([type]): [description]
-            name ([type]): [description]
+            attrib_type (AttributeOwner): Type of querying attribute
+            name (str): Name of querying attribute
 
         Returns:
-            [type]: [description]
+            ndarray(,): Data of querying attribute
         """
         _, _, data = self.attribs[(attrib_type, name)]
         return data
 
     def get_attrib_names(self):
-        """[summary]
+        """Get all attribute name in this geo
 
         Returns:
-            [type]: [description]
+            list((str,AttributeOwner)): All attributes containing in this geo
         """
         attrib_names = []
         for k, _ in self.attribs.items():
@@ -174,13 +225,12 @@ class HGeo():
         return attrib_names
 
     def commit_to_node(self, session, node_id):
-        """Summary
+        """Set this geo into hengine's node
 
         Args:
-            session (TYPE): Description
-            node_id (TYPE): Description
+            session (int64): The session of Houdini you are interacting with.
+            node_id (int): The node to add geo.
         """
-
         HAPI.set_part_info(session.hapi_session, node_id, self.part_info)
 
         for attrib_info, name, data in self.attribs.values():
@@ -191,21 +241,17 @@ class HGeo():
 
 class HGeoMesh(HGeo):
 
-    """Summary
-
-    Attributes:
-        FaceCount (TYPE): Description
-        Faces (TYPE): Description
-        PointCount (TYPE): Description
-        VertexCount (TYPE): Description
+    """A class representing hengine's mesh geometry
     """
 
     def __init__(self, vertices=None, faces=None):
-        """Summary
+        """Initialize
 
         Args:
-            vertices (TYPE): Description
-            faces (TYPE): Description
+            vertices (np.ndarray, optional): Verticed data, should be 2D:\
+                (pount_count, 3). Defaults to None.
+            faces (np.ndarray, optional): Faces data, should be in 2D such as\
+                (face_count, vertex_each_face). Defaults to None.
         """
         super(HGeoMesh, self).__init__()
         if isinstance(vertices, np.ndarray) and isinstance(faces, np.ndarray):
@@ -221,13 +267,13 @@ class HGeoMesh(HGeo):
 
             self.add_attrib(HDATA.AttributeOwner.POINT, "P", vertices)
 
-    def extract_from_sop(self, session, node_id, part_id):
-        """[summary]
+    def extract_from_sop(self, session, node_id, part_id=0):
+        """Extract geometry from sop
 
         Args:
-            session ([type]): [description]
-            node_id ([type]): [description]
-            part_id ([type]): [description]
+            session (int64): The session of Houdini you are interacting with.
+            node_id (int): The node to add geo.
+            part_id (int): Part id. Default to 0
         """
         self.part_info = HAPI.get_part_info(session.hapi_session, node_id, part_id)
         for attrib_type in range(0, HDATA.AttributeOwner.MAX):
@@ -247,35 +293,35 @@ class HGeoMesh(HGeo):
                         attrib_info, attrib_name, data)
 
     def commit_to_node(self, session, node_id):
-        """Summary
+        """Set this geo into hengine's node
 
         Args:
-            session (TYPE): Description
-            node_id (TYPE): Description
+            session (int64): The session of Houdini you are interacting with.
+            node_id (int): The node to add geo.
         """
         super().commit_to_node(session, node_id)
 
         HAPI.set_vertex_list(session.hapi_session, node_id, self.faces)
-        # Todo: what if each face's vertex count not same
-        HAPI.set_face_counts(session.hapi_session, node_id, np.repeat(
-            self.faces.shape[1], self.faces.shape[0]))
+        HAPI.set_face_counts(session.hapi_session, node_id, \
+            np.array([len(face) for face in self.faces]))
         HAPI.commit_geo(session.hapi_session, node_id)
 
 
 class HGeoCurve(HGeo):
-    """[summary]
 
-    Args:
-        HGeo ([type]): [description]
+    """A class representing hengine's curve geometry
     """
 
-    def __init__(self, vertices, curve_knots=None,\
-        is_periodic=False, order=4, curve_type=HDATA.CurveType.LINEAR):
-        """Summary
+    def __init__(self, vertices, curve_knots=None, # pylint: disable=too-many-arguments
+                 is_periodic=False, order=4, curve_type=HDATA.CurveType.LINEAR):
+        """Initialize
 
         Args:
-            vertices (TYPE): Description
-            faces (TYPE): Description
+            vertices (ndarray): Position of curve cvs, should be in 2D (vertices_count, 3)
+            curve_knots (ndarray, optional): Knots of cvs. Defaults to None.
+            order (int, optional): Order of curve. Defaults to 4.
+            curve_type (CurveType, optional): Type of curve. \
+                Defaults to HDATA.CurveType.LINEAR.
         """
         super(HGeoCurve, self).__init__()
         self.point_count = vertices.shape[0]
@@ -303,11 +349,11 @@ class HGeoCurve(HGeo):
         self.add_attrib(HDATA.AttributeOwner.POINT, "P", vertices)
 
     def commit_to_node(self, session, node_id):
-        """Summary
+        """Set this geo into hengine's node
 
         Args:
-            session (TYPE): Description
-            node_id (TYPE): Description
+            session (int64): The session of Houdini you are interacting with.
+            node_id (int): The node to add geo.
         """
         super().commit_to_node(session, node_id)
 

@@ -57,7 +57,7 @@ class HSession():
         self.connected_state = HDATA.SessionConnectionState.NOT_CONNECTED
         self.nodes = {}
         self.process_id = -1
-        self.cook_option = HAPI.GetCookOptions()
+        self.cook_option = HAPI.get_cook_options()
 
     def get_node(self, node_id):
         """Get node in this session by HAPI_NodeId
@@ -158,7 +158,7 @@ class HSession():
         Args:
             filename (str, optional): name of saved hip file
         """
-        HAPI.SaveHIPFile(self.hapi_session, filename)
+        HAPI.save_hip_file(self.hapi_session, filename)
         print("Session saved to {0}".format(filename))
 
     def __del__(self):

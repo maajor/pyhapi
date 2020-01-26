@@ -1,10 +1,13 @@
-"""[summary]
+# -*- coding: utf-8 -*-
+"""Example of setting mesh data into hengine
+Author  : Maajor
+Email   : hello_myd@126.com
 """
 import numpy as np
 import pyhapi as ph
 
 def main():
-    """[summary]
+    """Main
     """
     session = ph.HSessionManager.get_or_create_default_session()
 
