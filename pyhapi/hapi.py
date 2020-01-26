@@ -8,13 +8,17 @@ from ctypes import cdll, POINTER, c_int, c_int32, c_int64,\
     c_float, c_double, c_bool, byref, c_char_p, create_string_buffer
 import asyncio
 from datetime import datetime
+import platform
 
 import numpy as np
 
 from . import hdata as HDATA
 
-HAPI_LIB = cdll.LoadLibrary("libHAPIL")
-
+sys = platform.system()
+if sys == "Windows":
+    HAPI_LIB = cdll.LoadLibrary("libHAPIL")
+elif sys == "Linux":
+    HAPI_LIB = cdll.LoadLibrary("libHAPIL.so")
 
 def is_session_valid(session):
     """Wrapper for HAPI_IsSessionValid

@@ -2,6 +2,13 @@
 Object-Oriented Python Wrapper for Houdini Engine's C API
 
 # Install  
+1. setup PATH  
+* For Windows  
+Add ```C:\Program Files\Side Effects Software\Houdini <version>\custom\houdini\dsolib``` to PATH  
+* For Linux  
+```export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/opt/hfs<version>/dsolib/```  
+
+2. install through PyPI  
 ```$pip install pyhapi```
 
 # Example Usage  
