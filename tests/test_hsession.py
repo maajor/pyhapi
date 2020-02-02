@@ -19,3 +19,9 @@ def test_save_hip(init_session):
     """
     #session = ph.HSessionManager.get_or_create_default_session()
     init_session.save_hip()
+
+def test_load_hip(init_session):
+    """[summary]
+    """
+    #session = ph.HSessionManager.get_or_create_default_session()
+    init_session.load_hip("hda/FourShapes.hip", True)

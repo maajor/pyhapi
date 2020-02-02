@@ -61,6 +61,8 @@ class HNodeBase():
         self.node_id = -1
         self.name = ""
         self.node_info = HDATA.NodeInfo()
+        self.param_info = []
+        self.param_id_dict = {}
 
     def is_inited(self):
         """If this node is inited
@@ -154,67 +156,10 @@ class HNodeBase():
             all_geos.append(extract_geo)
         return all_geos
 
-    def get_display_geos(self):
-        """Get display geo of this node
-
-        Returns:
-            list of HGeo: List of geos in this node
-        """
-        if self.get_node_type() == HDATA.NodeType.OBJ:
-            all_geos = []
-            child_sop_count = HAPI.compose_object_list(self.session.hapi_session, self.node_id)
-            if child_sop_count == 0:
-                return self.__get_display_geo_by_node(self.node_id)
-            child_object_infos = HAPI.get_composed_object_list(self.session.hapi_session,\
-                self.node_id, child_sop_count)
-            for objectinfo in child_object_infos:
-                sop_geo = self.__get_display_geo_by_node(objectinfo.nodeId)
-                all_geos.extend(sop_geo)
-            return all_geos
-        if self.get_node_type() == HDATA.NodeType.SOP:
-            return self.__get_display_geo_by_node(self.node_id)
-        print("Operator type is {0}, cannot retrieve geo".format(self.get_node_type()))
-        return None
-
-    def delete(self):
-        """Delete current node
-        """
-        try:
-            HAPI.delete_node(self.session.hapi_session, self.node_id)
-            self.instantiated = False
-        except AssertionError as error:
-            print("HAPI excecution failed")
-            print(error)
-
-
-class HNode(HNodeBase):
-
-    """A node user created for operator name or hda assets, could get/set\
-        params, press button and cook.
-    """
-    def __init__(self, session, operator_name, node_name, parent_node=None):
-        """Init
-
-        Args:
-            session (HSession): Session where this asset is loaded
-            operator_name (str): Operator name of this node
-            node_name (str): Name of this node
-            parent_node (HNodeBase, optional): Parent node. Defaults to None.
-        """
-        super(HNode, self).__init__(session)
-        self.node_id = HAPI.create_node(self.session.hapi_session, operator_name, node_name,\
-            parent_node_id=parent_node.node_id if parent_node is not None else -1,\
-                cook_on_creation=False)
-        self.instantiated = True
-        self.session.nodes[self.node_id] = self
-        self.name = node_name
-        self.__collect_params()
-
-    def __collect_params(self):
+    def _collect_params(self):
         self.node_info = HAPI.get_node_info(self.session.hapi_session, self.node_id)
         self.param_info = HAPI.get_parameters(\
             self.session.hapi_session, self.node_id, self.node_info)
-        self.param_id_dict = {}
         for i in range(0, self.node_info.parmCount):
             namesh = self.param_info[i].labelSH
             namestr = HAPI.get_string(self.session.hapi_session, namesh)
@@ -353,6 +298,62 @@ class HNode(HNodeBase):
         await HAPI.wait_cook_async(self.session.hapi_session, status_report_interval)
         HAPI.set_parm_int_value(self.session.hapi_session, self.node_id, param_name, 0)
 
+    def get_display_geos(self):
+        """Get display geo of this node
+
+        Returns:
+            list of HGeo: List of geos in this node
+        """
+        if self.get_node_type() == HDATA.NodeType.OBJ:
+            all_geos = []
+            child_sop_count = HAPI.compose_object_list(self.session.hapi_session, self.node_id)
+            if child_sop_count == 0:
+                return self.__get_display_geo_by_node(self.node_id)
+            child_object_infos = HAPI.get_composed_object_list(self.session.hapi_session,\
+                self.node_id, child_sop_count)
+            for objectinfo in child_object_infos:
+                sop_geo = self.__get_display_geo_by_node(objectinfo.nodeId)
+                all_geos.extend(sop_geo)
+            return all_geos
+        if self.get_node_type() == HDATA.NodeType.SOP:
+            return self.__get_display_geo_by_node(self.node_id)
+        print("Operator type is {0}, cannot retrieve geo".format(self.get_node_type()))
+        return None
+
+    def delete(self):
+        """Delete current node
+        """
+        try:
+            HAPI.delete_node(self.session.hapi_session, self.node_id)
+            self.instantiated = False
+        except AssertionError as error:
+            print("HAPI excecution failed")
+            print(error)
+
+
+class HNode(HNodeBase):
+
+    """A node user created for operator name or hda assets, could get/set\
+        params, press button and cook.
+    """
+    def __init__(self, session, operator_name, node_name, parent_node=None):
+        """Init
+
+        Args:
+            session (HSession): Session where this asset is loaded
+            operator_name (str): Operator name of this node
+            node_name (str): Name of this node
+            parent_node (HNodeBase, optional): Parent node. Defaults to None.
+        """
+        super(HNode, self).__init__(session)
+        self.node_id = HAPI.create_node(self.session.hapi_session, operator_name, node_name,\
+            parent_node_id=parent_node.node_id if parent_node is not None else -1,\
+                cook_on_creation=False)
+        self.instantiated = True
+        self.session.nodes[self.node_id] = self
+        self.name = node_name
+        self._collect_params()
+
 class HInputNode(HNodeBase):
 
     """A node dedicated to marshall geom datas
@@ -377,6 +378,7 @@ class HExistingNode(HNodeBase):
         try:
             self.node_info = HAPI.get_node_info(self.session.hapi_session, self.node_id)
             self.name = HAPI.get_string(self.session.hapi_session, self.node_info.nameSH)
+            self._collect_params()
             self.instantiated = True
         except AssertionError as error:
             print("HAPI excecution failed")

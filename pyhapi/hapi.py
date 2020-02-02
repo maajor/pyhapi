@@ -14,10 +14,10 @@ import numpy as np
 
 from . import hdata as HDATA
 
-sys = platform.system()
-if sys == "Windows":
+SYS = platform.system()
+if SYS == "Windows":
     HAPI_LIB = cdll.LoadLibrary("libHAPIL")
-elif sys == "Linux":
+elif SYS == "Linux":
     HAPI_LIB = cdll.LoadLibrary("libHAPIL.so")
 
 def is_session_valid(session):
@@ -1329,6 +1329,18 @@ def save_hip_file(session, hipname, lock_nodes=True):
     assert result == HDATA.Result.SUCCESS,\
         "SaveHIPFile Failed with {0}".format(HDATA.Result(result).name)
 
+def load_hip_file(session, hipname, cook_on_load):
+    """[summary]
+    
+    Args:
+        session ([type]): [description]
+        hipname ([type]): [description]
+        cook_on_load ([type]): [description]
+    """
+    result = HAPI_LIB.HAPI_LoadHIPFile(
+        byref(session), c_char_p(hipname.encode('utf-8')), c_bool(cook_on_load))
+    assert result == HDATA.Result.SUCCESS,\
+        "LoadHipFile Failed with {0}".format(HDATA.Result(result).name)
 
 def get_cook_options():
     """Get defalut cook option

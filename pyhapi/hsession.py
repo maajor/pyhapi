@@ -156,13 +156,15 @@ class HSession():
             return HAPI.is_session_valid(self.hapi_session)
         return False
 
-    def save_hip(self, filename="debug.hip"):
+    def save_hip(self, filename="debug.hip", lock_nodes=True):
         """Save current session to a hip file
 
         Args:
             filename (str, optional): name of saved hip file
+            lock_nodes (bool, optional): Specify whether to lock all SOP nodes \
+            before saving the scene file.
         """
-        HAPI.save_hip_file(self.hapi_session, filename)
+        HAPI.save_hip_file(self.hapi_session, filename, lock_nodes)
         print("Session saved to {0}".format(filename))
 
     def restart_session(self):
@@ -173,6 +175,21 @@ class HSession():
         """
         HAPI.cleanup(self.hapi_session)
         self.__initialize_session(self.root_path)
+        return self
+
+    def load_hip(self, filename, cook_on_load=False):
+        """Loads a .hip file into the main Houdini scene
+
+        Args:
+            filename ([type]): HIP file absolute path to load
+            cook_on_load (bool, optional): \
+                Set to true if you wish the nodes to cook as soon as they are created.\
+                    Defaults to False.
+
+        Returns:
+            HSession: session itself
+        """
+        HAPI.load_hip_file(self.hapi_session, filename, cook_on_load)
         return self
 
     def __del__(self):
