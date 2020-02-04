@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Interface for interacting with houdini digital assets (hda)
 Author  : Maajor
-Email   : hello_myd@126.com
+Email   : info@ma-yidong.com
 
 HAsset:
     Representing an HDA asset

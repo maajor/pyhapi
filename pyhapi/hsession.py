@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """wrapper for houdini engine's session.
 Author  : Maajor
-Email   : hello_myd@126.com
+Email   : info@ma-yidong.com
 
 HSession:
     A wrapper fou houdini engine's session, it contains the session itself\

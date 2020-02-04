@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-\
 """pyhapi
 Author  : Maajor
-Email   : hello_myd@126.com
+Email   : info@ma-yidong.com
 """
 from .hdata import *
 from .hgeo import HGeo, HGeoMesh, HGeoCurve

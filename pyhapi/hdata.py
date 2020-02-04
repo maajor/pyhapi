@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Houdini Engine's internal data types
 Author  : Maajor
-Email   : hello_myd@126.com
+Email   : info@ma-yidong.com
 """
 from ctypes import Structure, Array,\
     c_int, c_int32, c_int64, c_float, c_bool
@@ -600,7 +600,7 @@ class AssetInfo(Structure): # pylint: disable=too-few-public-methods
                 ('hasEverCooked', c_bool),
                 ('nameSH', c_int32),
                 ('labelSH', c_int32),
-                ('filePathSH ', c_int32),
+                ('filePathSH', c_int32),
                 ('versionSH', c_int32),
                 ('fullOpNameSH', c_int32),
                 ('helpTextSH', c_int32),
@@ -622,7 +622,7 @@ class ObjectInfo(Structure): # pylint: disable=too-few-public-methods
                 ('hasTransformChanged', c_bool),
                 ('haveGeosChanged', c_bool),
                 ('isVisible', c_bool),
-                ('isInstancer ', c_bool),
+                ('isInstancer', c_bool),
                 ('isInstanced', c_bool),
                 ('geoCount', c_int32),
                 ('nodeId', c_int32),

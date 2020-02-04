@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Setup pyhapi
 Author  : Maajor
-Email   : hello_myd@126.com
+Email   : info@ma-yidong.com
 """
 import io
 import re
@@ -20,15 +20,15 @@ setup(
     version=VERSION,
     url="https://github.com/maajor/pyhapi",
     project_urls={
-        "Documentation": "https://github.com/maajor/pyhapi",
+        "Documentation": "https://pyhapi.readthedocs.io",
         "Code": "https://github.com/maajor/pyhapi",
         "Issue tracker": "https://github.com/maajor/pyhapi/issues",
     },
     license="MIT",
     author="Yidong Ma(Maajor)",
-    author_email="hello_myd@126.com",
+    author_email="info@ma-yidong.com",
     maintainer="Yidong Ma(Maajor)",
-    maintainer_email="hello_myd@126.com",
+    maintainer_email="info@ma-yidong.com",
     description="A object-oriented python wrapper for houdini engine's C API",
     long_description=README,
     classifiers=[

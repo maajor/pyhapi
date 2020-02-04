@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Wrapper for houdini engine's geometry.
 Author  : Maajor
-Email   : hello_myd@126.com
+Email   : info@ma-yidong.com
 
 HGeo:
     An base class for houdini engine's geometry, including shared operation\

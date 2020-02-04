@@ -2,7 +2,7 @@
 # pylint: disable=too-many-lines
 """Wrapper for HAPI's APIs.
 Author  : Maajor
-Email   : hello_myd@126.com
+Email   : info@ma-yidong.com
 """
 from ctypes import cdll, POINTER, c_int, c_int32, c_int64,\
     c_float, c_double, c_bool, byref, c_char_p, create_string_buffer
@@ -299,8 +299,8 @@ def create_node(session, operator_name, node_label="", parent_node_id=-1, cook_o
 def delete_node(session, node_id):
     """Wrapper for HAPI_DeleteNode
     Delete a node from a node network.\
-         Only nodes with their HAPI_NodeInfo::createdPostAssetLoad \
-             set to true can be deleted this way.
+        Only nodes with their HAPI_NodeInfo::createdPostAssetLoad \
+            set to true can be deleted this way.
     Args:
         session (int64): The session of Houdini you are interacting with.
         node_id (int): The node to delete.
@@ -1331,7 +1331,7 @@ def save_hip_file(session, hipname, lock_nodes=True):
 
 def load_hip_file(session, hipname, cook_on_load):
     """[summary]
-    
+
     Args:
         session ([type]): [description]
         hipname ([type]): [description]

@@ -1,6 +1,10 @@
 # pyhapi
 Object-Oriented Python Wrapper for Houdini Engine's C API
 
+# Documentation  
+
+Please visit [pyhapi documentation](https://pyhapi.readthedocs.io).  
+
 # Install  
 ## 1. setup PATH  
 * For Windows  
@@ -43,6 +47,8 @@ Following feature in Houdini Engine is NOT supported yet:
 * PDG execution
 
 # Example Usage  
+
+Please see documentation for detailed tutorial.  ****
 
 ## Create a session  
 ```

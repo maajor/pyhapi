@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Wrapper for houdini engine's node
 Author  : Maajor
-Email   : hello_myd@126.com
+Email   : info@ma-yidong.com
 
 HNodeBase:
     A base class for houdini engine's node, including shared operation\
