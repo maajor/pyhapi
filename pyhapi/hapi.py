@@ -269,6 +269,65 @@ def create_input_node(session, node_label):
             HDATA.Result(result).name)
     return node_id.value
 
+def create_heightfield_input_node(session, node_label, xsize, ysize, voxel_size):
+    """Wrapper for HAPI_CreateHeightfieldInputNode
+    Creates the required node hierarchy needed for Heightfield inputs. 
+
+    Args:
+        session (int64): The session of Houdini you are interacting with.
+        node_label ( str): Give this input node a name for easy debugging. \
+            The node's parent OBJ node and the Null SOP node will both get \
+                this given name with "input_" prepended. You can also pass \
+                    NULL in which case the name will be "input#" where # is \
+                    some number.
+        xsize (int): size of the heightfield in X
+        ysize (int): size of the heightfield in y
+        voxelsize (int): Size of the voxel
+
+    Returns:
+        int[4] : Newly created id for Heightfield node, for height volume\
+            for mask volume and for merge node
+    """
+    heightfield_id = c_int32()
+    height_id = c_int32()
+    mask_id = c_int32()
+    merge_id = c_int32()
+    result = HAPI_LIB.HAPI_CreateHeightfieldInputNode(
+        byref(session), -1, c_char_p(node_label.encode('utf-8')),
+        xsize, ysize, voxel_size,
+        byref(heightfield_id), byref(height_id), byref(mask_id), byref(merge_id))
+    assert result == HDATA.Result.SUCCESS,\
+        "CreateHeightfieldInputNode Failed with {0}".format(
+            HDATA.Result(result).name)
+    return [heightfield_id.value, height_id.value, mask_id.value, merge_id.value]
+
+def create_heightfield_volume_input_node(session, node_label, xsize, ysize, voxel_size):
+    """Wrapper for HAPI_CreateHeightfieldInputNode
+    Creates a volume input node that can be used with Heightfields. 
+
+    Args:
+        session (int64): The session of Houdini you are interacting with.
+        node_label ( str): Give this input node a name for easy debugging. \
+            The node's parent OBJ node and the Null SOP node will both get \
+                this given name with "input_" prepended. You can also pass \
+                    NULL in which case the name will be "input#" where # is \
+                    some number.
+        xsize (int): size of the heightfield in X
+        ysize (int): size of the heightfield in y
+        voxelsize (int): Size of the voxel
+
+    Returns:
+        int[4] : Newly created id for Heightfield node, for height volume\
+            for mask volume and for merge node
+    """
+    node_id = c_int32()
+    result = HAPI_LIB.HAPI_CreateHeightfieldInputVolumeNode(
+        byref(session), -1, byref(node_id), c_char_p(node_label.encode('utf-8')),
+        xsize, ysize, voxel_size)
+    assert result == HDATA.Result.SUCCESS,\
+        "CreateHeightfieldVolumeInputNode Failed with {0}".format(
+            HDATA.Result(result).name)
+    return node_id.value
 
 def create_node(session, operator_name, node_label="", parent_node_id=-1, cook_on_creation=False):
     """Wrapper for HAPI_CreateNode
@@ -513,7 +572,7 @@ def get_display_geo_info(session, node_id):
     return geo_info
 
 
-def get_part_info(session, node_id, part_id):
+def get_part_info(session, node_id, part_id=0):
     """Wrapper for HAPI_GetPartInfo
     Get a particular part info struct.
 
@@ -532,6 +591,60 @@ def get_part_info(session, node_id, part_id):
         "GetPartInfo Failed with {0}".format(HDATA.Result(result).name)
     return part_info
 
+def set_volume_info(session, node_id, part_id, volume_info):
+    """Wrapper for HAPI_SetVolumeInfo
+    Set the volume info of a geo on a geo input.
+
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        part_id (int): The partid to set
+        volume_info (VolumeInfo):  the volumeinfo to set
+    """
+    result = HAPI_LIB.HAPI_SetVolumeInfo(
+        byref(session), node_id, part_id,  byref(volume_info))
+    assert result == HDATA.Result.SUCCESS,\
+        "SetVolume Failed with {0}".format(HDATA.Result(result).name)
+
+def get_first_volume_tile(session, node_id, part_id=0):
+    """Wrapper for HAPI_GetFirstVolumeTile
+    Iterate through a volume based on 8x8x8 sections of the volume \
+    Start iterating through the value of the volume at part_id. 
+
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        part_id (int): The part to get
+
+    Returns:
+        VolumeTileInfo: the VolumeTileInfo of queried node
+    """
+    volume_tile_info = HDATA.VolumeTileInfo()
+    result = HAPI_LIB.HAPI_GetFirstVolumeTile(
+        byref(session), node_id, part_id, byref(volume_tile_info))
+    assert result == HDATA.Result.SUCCESS,\
+        "GetFirstVolumeTile Failed with {0}".format(HDATA.Result(result).name)
+    return volume_tile_info
+
+def get_next_volume_tile(session, node_id, part_id=0):
+    """Wrapper for HAPI_GetNextVolumeTile
+    terate through a volume based on 8x8x8 sections of the volume \
+    Continue iterating through the value of the volume at part_id
+
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        part_id (int): The part to get
+
+    Returns:
+        VolumeTileInfo: the VolumeTileInfo of queried node
+    """
+    volume_tile_info = HDATA.VolumeTileInfo()
+    result = HAPI_LIB.HAPI_GetNextVolumeTile(
+        byref(session), node_id, part_id, byref(volume_tile_info))
+    assert result == HDATA.Result.SUCCESS,\
+        "GetFirstVolumeTile Failed with {0}".format(HDATA.Result(result).name)
+    return volume_tile_info
 
 def get_composed_object_list(session, node_id, count):
     """Wrapper for HAPI_GetComposedObjectList
@@ -1293,6 +1406,136 @@ def get_faces(session, node_id, part_info):
         face_counts[i] = face_counts[i-1] + face_counts[i]
     faces = np.split(vertex_list, face_counts)
     return faces
+
+def set_heightfield_data(session, node_id, part_id, name, data_array):
+    """Wrapper for HAPI_SetHeightFieldData
+    Set the height field data for a terrain volume with the values from\
+         a flattened 2D array of float.
+
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        part_id (int): The part id
+        name (str): The name of the volume used for the heightfield. \
+            If set to "height" the values will be used for height information, \
+                if not, the data will used as a mask. 
+        data_array (np.ndarray): volume info of this node
+
+    """
+    floatp = POINTER(c_float)
+    result = HAPI_LIB.HAPI_SetHeightFieldData(
+        byref(session), node_id, part_id, c_char_p(name.encode('utf-8')),
+        data_array.flatten().ctypes.data_as(floatp), 0, np.size(data_array))
+    assert result == HDATA.Result.SUCCESS,\
+        "SetHeightfieldData Failed with {0}".format(HDATA.Result(result).name)
+
+def get_heightfield_data(session, node_id, part_id, volume_info):
+    """Wrapper for HAPI_GetHeightFieldData
+    Get the height field data for a terrain volume as a flattened 2D array of float heights
+
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        volume_info (VolumeInfo): volume info of this node
+
+    Returns:
+        np.ndarray: data of this heightfield
+    """
+    data_size = volume_info.xLength *  volume_info.yLength * volume_info.tupleSize
+    data_buffer = (c_float * data_size)()
+    result = HAPI_LIB.HAPI_GetHeightFieldData(
+        byref(session), node_id, part_id,
+        byref(data_buffer), 0, data_size)
+    assert result == HDATA.Result.SUCCESS,\
+        "GetHeightfieldData Failed with {0}".format(HDATA.Result(result).name)
+    data_np = np.frombuffer(data_buffer, np.float32)
+    return data_np
+
+def get_volume_tile_float_data(session, node_id, part_id, volume_tile_info, tuple_size):
+    """Wrapper for HAPI_GetVolumeTileFloatData
+    Retrieve floating point values of the voxels pointed to by a tile.
+
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        volume_tile_info (VolumeTileInfo): The tile to retrieve
+        tuple_size (int): The tuple size of data
+
+    Returns:
+        np.ndarray: data of this volume tile
+    """
+    data_size = 8*8*8*tuple_size
+    data_buffer = (c_float * data_size)()
+    result = HAPI_LIB.HAPI_GetVolumeTileFloatData(\
+        byref(session), node_id, part_id, c_float(-8.8), byref(volume_tile_info),\
+            byref(data_buffer), data_size)
+    assert result == HDATA.Result.SUCCESS,\
+        "GetVolumeTileFloatData Failed with {0}".format(HDATA.Result(result).name)
+    data_np = np.frombuffer(data_buffer, np.float32)
+    return data_np
+
+def get_volume_tile_int_data(session, node_id, part_id, volume_tile_info, tuple_size):
+    """Wrapper for HAPI_GetVolumeTileIntData
+    Retrieve floating point values of the voxels pointed to by a tile.
+
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        volume_tile_info (VolumeTileInfo): The tile to retrieve
+        tuple_size (int): The tuple size of data
+
+    Returns:
+        np.ndarray: data of this volume tile
+    """
+    data_size = 8*8*8*tuple_size
+    data_buffer = (c_int32 * data_size)()
+    result = HAPI_LIB.HAPI_GetVolumeTileIntData(\
+        byref(session), node_id, part_id, c_int(-8), byref(volume_tile_info),\
+            byref(data_buffer), data_size)
+    assert result == HDATA.Result.SUCCESS,\
+        "GetVolumeTileIntData Failed with {0}".format(HDATA.Result(result).name)
+    data_np = np.frombuffer(data_buffer, np.int32)
+    return data_np
+
+def set_volume_tile_float_data(session, node_id, part_id, volume_tile_info, data_array, tuple_size):
+    """Wrapper for HAPI_SetVolumeTileFloatData
+    Retrieve floating point values of the voxels pointed to by a tile.
+
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        part_id (int): The part to get.
+        volume_tile_info (VolumeTileInfo): The tile to set
+        volume_tile_info (VolumeTileInfo): The data to set
+        tuple_size (int): The tuple size of data
+    """
+    floatp = POINTER(c_float)
+    data_size = 8*8*8*tuple_size
+    result = HAPI_LIB.HAPI_SetVolumeTileFloatData(\
+        byref(session), node_id, part_id, byref(volume_tile_info),\
+            data_array.flatten().ctypes.data_as(floatp), data_size)
+    assert result == HDATA.Result.SUCCESS,\
+        "SetVolumeTileIntData Failed with {0}".format(HDATA.Result(result).name)
+
+def set_volume_tile_int_data(session, node_id, part_id, volume_tile_info, data_array, tuple_size):
+    """Wrapper for HAPI_SetVolumeTileIntData
+    Retrieve floating point values of the voxels pointed to by a tile.
+
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        part_id (int): The part to get.
+        volume_tile_info (VolumeTileInfo): The tile to set
+        volume_tile_info (VolumeTileInfo): The data to set
+        tuple_size (int): The tuple size of data
+    """
+    intp = POINTER(c_int)
+    data_size = 8*8*8*tuple_size
+    result = HAPI_LIB.HAPI_SetVolumeTileIntData(\
+        byref(session), node_id, part_id, byref(volume_tile_info),\
+            data_array.flatten().ctypes.data_as(intp), data_size)
+    assert result == HDATA.Result.SUCCESS,\
+        "SetVolumeTileIntData Failed with {0}".format(HDATA.Result(result).name)
 
 def commit_geo(session, node_id):
     """Wrapper for HAPI_CommitGeo

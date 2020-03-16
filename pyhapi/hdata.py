@@ -425,6 +425,17 @@ class InputType(enum.IntEnum):
     GEOMETRY = 1
     MAX = 2
 
+class RSTOrder(enum.IntEnum):
+    """Equivalent of HAPI's HAPI_RSTOrder
+    """
+    HAPI_TRS = 0
+    HAPI_TSR = 1
+    HAPI_RTS = 2
+    HAPI_RST = 3
+    HAPI_STR = 4
+    HAPI_SRT = 5
+    HAPI_RSTORDER_DEFAULT = 5
+
 
 NP_TYPE_TO_HSTORAGE_TYPE = {
     np.dtype('int32'): StorageType.INT,
@@ -547,6 +558,49 @@ class CurveInfo(StructureWithEnums): # pylint: disable=too-few-public-methods
                 ('hasKnots', c_bool)]
     _map = {
         "curveType":  CurveType
+    }
+
+class Transform(StructureWithEnums): # pylint: disable=too-few-public-methods
+    """Equivalent of HAPI's HAPI_Transform
+    """
+    _fields_ = [('position', c_float * 3),
+                ('rotationQuaternion;', c_float * 4),
+                ('scale', c_float * 3),
+                ('shear', c_float * 3),
+                ('rstOrder', c_int32)]
+    _map = {
+        "type":  RSTOrder
+    }
+
+class VolumeTileInfo(Structure): # pylint: disable=too-few-public-methods
+    """Equivalent of HAPI's HAPI_VolumeTileInfo
+    """
+    _fields_ = [('minX', c_int32),
+                ('minY', c_int32),
+                ('minZ', c_int32),
+                ('isValid', c_bool)]
+
+class VolumeInfo(StructureWithEnums): # pylint: disable=too-few-public-methods
+    """Equivalent of HAPI's HAPI_VolumeInfo
+    """
+    _fields_ = [('nameSH', c_int32),
+                ('type', c_int32),
+                ('xLength', c_int32),
+                ('yLength', c_int32),
+                ('zLength', c_int32),
+                ('minX', c_int32),
+                ('minY', c_int32),
+                ('minZ', c_int32),
+                ('tupleSize', c_int32),
+                ('storage', c_int32),
+                ('tileSize', c_int32),
+                ('transform', Transform),
+                ('hasTaper', c_bool),
+                ('xTaper', c_float),
+                ('yTaper', c_float)]
+    _map = {
+        "type":  VolumeType,
+        "storage": StorageType,
     }
 
 class AttributeInfo(StructureWithEnums): # pylint: disable=too-few-public-methods
