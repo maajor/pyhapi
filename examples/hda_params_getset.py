@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Example of getting/setting params of HDA asset
 Author  : Maajor
-Email   : hello_myd@126.com
+Email   : info@ma-yidong.com
 """
 import pyhapi as ph
 

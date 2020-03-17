@@ -209,8 +209,10 @@ class HGeo():
         Returns:
             ndarray(,): Data of querying attribute
         """
-        _, _, data = self.attribs[(attrib_type, name)]
-        return data
+        if (attrib_type, name) in self.attribs:
+            _, _, data = self.attribs[(attrib_type, name)]
+            return data
+        return None
 
     def get_attrib_names(self):
         """Get all attribute name in this geo
@@ -414,3 +416,109 @@ class HGeoCurve(HGeo):
         if self.curve_info.hasKnots:
             self.curve_knots = HAPI.get_curve_knots(session.hapi_session, node_id, \
                 part_info.id, self.curve_info.knotCount)
+
+class HGeoVolume(HGeo):
+    """[summary]
+
+    Args:
+        HGeo ([type]): [description]
+    """
+
+    def __init__(self):
+        """Initialize
+
+        Args:
+            vertices (np.ndarray, optional): Verticed data, should be 2D:\
+                (pount_count, 3). Defaults to None.
+            faces (np.ndarray, optional): Faces data, should be in 2D such as\
+                (face_count, vertex_each_face). Defaults to None.
+        """
+        super(HGeoVolume, self).__init__()
+
+    def extract_from_sop(self, session, part_info, node_id, part_id=0):
+        """Extract mesh from sop
+
+        Args:
+            session (int64): The session of Houdini you are interacting with.
+            part_info (PartInfo): The info of part
+            node_id (int): The node to add geo.
+            part_id (int): Part id. Default to 0
+        """
+        super().extract_from_sop(session, part_info, node_id, part_id)
+
+    def commit_to_node(self, session, node_id):
+        """Set this geo into hengine's node
+
+        Args:
+            session (int64): The session of Houdini you are interacting with.
+            node_id (int): The node to add geo.
+        """
+        super().commit_to_node(session, node_id)
+
+class HGeoHeightfield(HGeo):
+    """[summary]
+
+    Args:
+        HGeo ([type]): [description]
+    """
+
+    def __init__(self, volume=None, volume_name="height", transform=None):
+        """Initialize
+
+        Args:
+            vertices (np.ndarray, optional): Verticed data, should be 2D:\
+                (pount_count, 3). Defaults to None.
+            faces (np.ndarray, optional): Faces data, should be in 2D such as\
+                (face_count, vertex_each_face). Defaults to None.
+        """
+        super(HGeoHeightfield, self).__init__()
+        if isinstance(volume, np.ndarray):
+            self.volume = volume
+            self.volume_name = volume_name
+            self.xsize, self.ysize, self.tuple_size = volume.shape
+            self.zsize = 1
+
+            self.part_info.type = HDATA.PartType.VOLUME
+            self.part_info.faceCount = 1
+            self.part_info.vertexCount = 1
+            self.part_info.pointCount = 1
+
+            self.volume_info = HDATA.VolumeInfo()
+            self.volume_info.xLength = self.xsize
+            self.volume_info.yLength = self.ysize
+            self.volume_info.zLength = self.zsize
+            self.volume_info.tupleSize = self.tuple_size
+            self.volume_info.tileSize = 8
+            self.volume_info.type = HDATA.VolumeType.HOUDINI
+            self.volume_info.storage = (
+                HDATA.StorageType.FLOAT if volume.type is np.float32 else HDATA.StorageType.INT)
+            self.volume_info.transform = HDATA.Transform() \
+                if isinstance(transform, HDATA.Transform) else transform
+
+    def extract_from_sop(self, session, part_info, node_id, part_id=0):
+        """Extract mesh from sop
+
+        Args:
+            session (int64): The session of Houdini you are interacting with.
+            part_info (PartInfo): The info of part
+            node_id (int): The node to add geo.
+            part_id (int): Part id. Default to 0
+        """
+        super().extract_from_sop(session, part_info, node_id, part_id)
+        self.volume_info = HAPI.get_volume_info(session.hapi_session, node_id, part_id)
+        self.xsize = self.volume_info.xLength
+        self.ysize = self.volume_info.yLength
+        self.zsize = self.volume_info.zLength
+        self.tuple_size = self.volume_info.tupleSize
+        self.volume = HAPI.get_heightfield_data(session.hapi_session, \
+            node_id, part_id, self.volume_info)
+        self.volume_name = HAPI.get_string(session.hapi_session, self.volume_info.nameSH)
+
+    def commit_to_node(self, session, node_id):
+        """Set this geo into hengine's node
+
+        Args:
+            session (int64): The session of Houdini you are interacting with.
+            node_id (int): The node to add geo.
+        """
+        super().commit_to_node(session, node_id)

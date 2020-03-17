@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Example of setting curve data into hengine
 Author  : Maajor
-Email   : hello_myd@126.com
+Email   : info@ma-yidong.com
 """
 import numpy as np
 

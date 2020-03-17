@@ -602,9 +602,28 @@ def set_volume_info(session, node_id, part_id, volume_info):
         volume_info (VolumeInfo):  the volumeinfo to set
     """
     result = HAPI_LIB.HAPI_SetVolumeInfo(
-        byref(session), node_id, part_id,  byref(volume_info))
+        byref(session), node_id, part_id, byref(volume_info))
     assert result == HDATA.Result.SUCCESS,\
         "SetVolume Failed with {0}".format(HDATA.Result(result).name)
+
+def get_volume_info(session, node_id, part_id):
+    """Wrapper for HAPI_GetVolumeInfo
+    Set the volume info of a geo on a geo input.
+
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        part_id (int): The partid to set
+
+    Returns:
+        VolumeInfo: the VolumeInfo of queried node
+    """
+    volume_info = HDATA.VolumeInfo()
+    result = HAPI_LIB.HAPI_GetVolumeInfo(
+        byref(session), node_id, part_id, byref(volume_info))
+    assert result == HDATA.Result.SUCCESS,\
+        "GetVolumeInfo Failed with {0}".format(HDATA.Result(result).name)
+    return volume_info
 
 def get_first_volume_tile(session, node_id, part_id=0):
     """Wrapper for HAPI_GetFirstVolumeTile
@@ -1138,7 +1157,10 @@ def get_attribute_names(session, node_id, part_info,
         attrib_type (AttributeOwner, optional): Type of attribute. \
             Defaults to HDATA.AttributeOwner.POINT.
     """
+    attrib_names = []
     attrib_count = part_info.attributeCounts[attrib_type]
+    if attrib_count == 0:
+        return attrib_names
     string_handle_buffer = (c_int32 * attrib_count)()
     result = HAPI_LIB. HAPI_GetAttributeNames(
         byref(session), node_id, part_info.id, attrib_type,
@@ -1449,6 +1471,7 @@ def get_heightfield_data(session, node_id, part_id, volume_info):
     assert result == HDATA.Result.SUCCESS,\
         "GetHeightfieldData Failed with {0}".format(HDATA.Result(result).name)
     data_np = np.frombuffer(data_buffer, np.float32)
+    data_np = data_np.reshape(volume_info.xLength, volume_info.yLength, volume_info.tupleSize)
     return data_np
 
 def get_volume_tile_float_data(session, node_id, part_id, volume_tile_info, tuple_size):

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Example of extracting mesh data from hengine's node
 Author  : Maajor
-Email   : hello_myd@126.com
+Email   : info@ma-yidong.com
 """
 import pyhapi as ph
 

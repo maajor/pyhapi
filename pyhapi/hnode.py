@@ -41,7 +41,7 @@ another_box.disconnect_node_input(0).delete()
 """
 from . import hapi as HAPI
 from . import hdata as HDATA
-from .hgeo import HGeoMesh, HGeoCurve, HGeo
+from .hgeo import HGeoMesh, HGeoCurve, HGeo, HGeoHeightfield, HGeoVolume
 
 class HNodeBase():
     """A base class for houdini engine's node, including shared operation\
@@ -149,6 +149,13 @@ class HNodeBase():
                 extract_geo = HGeoMesh()
             elif part_info.type == HDATA.PartType.CURVE:
                 extract_geo = HGeoCurve()
+            elif part_info.type == HDATA.PartType.VOLUME:
+                volume_info = HAPI.get_volume_info(self.session.hapi_session, \
+                    geo_info.nodeId, part_id)
+                if volume_info.zLength == 1:
+                    extract_geo = HGeoHeightfield()
+                else:
+                    extract_geo = HGeoVolume()
             else:
                 print("Type of geo extraction not implemented {0}".format(part_info.type))
                 extract_geo = HGeo()

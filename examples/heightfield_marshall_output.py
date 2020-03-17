@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Example of marshall out curve
+"""Example of marshall out a heightfield
 Author  : Maajor
 Email   : info@ma-yidong.com
 """
@@ -11,15 +11,15 @@ def main():
     session = ph.HSessionManager.get_or_create_default_session()
 
     #load hda asset and instantiate
-    hda_asset = ph.HAsset(session, "hda/nurbs_curve.hda")
-    asset_node = hda_asset.instantiate(node_name="Curve").cook()
+    hda_asset = ph.HAsset(session, "hda/heightfield_test.hda")
+    asset_node = hda_asset.instantiate(node_name="HF").cook()
 
-    #get node's all display geo, print curveinfo and P
+    #get node's all display geo, print volume's data shape and name
     all_geos = asset_node.get_display_geos()
     for geo in all_geos:
-        print(geo.get_attrib_data(ph.AttributeOwner.POINT, "P"))
-        if isinstance(geo, ph.HGeoCurve):
-            print(geo.curve_info)
+        if isinstance(geo, ph.HGeoHeightfield):
+            print(geo.volume.shape)
+            print(geo.volume_name)
 
     session.save_hip("modifiedScene.hip")
 

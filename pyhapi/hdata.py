@@ -564,13 +564,30 @@ class Transform(StructureWithEnums): # pylint: disable=too-few-public-methods
     """Equivalent of HAPI's HAPI_Transform
     """
     _fields_ = [('position', c_float * 3),
-                ('rotationQuaternion;', c_float * 4),
+                ('rotationQuaternion', c_float * 4),
                 ('scale', c_float * 3),
                 ('shear', c_float * 3),
-                ('rstOrder', c_int32)]
+                ('rstorder', c_int32)]
     _map = {
-        "type":  RSTOrder
+        "rstorder":  RSTOrder
     }
+
+    def __init__(self):
+        super(Transform, self).__init__()
+        self.position[0] = 0
+        self.position[1] = 0
+        self.position[2] = 0
+        self.rotationQuaternion[0] = 0
+        self.rotationQuaternion[1] = 0
+        self.rotationQuaternion[2] = 0
+        self.rotationQuaternion[3] = 0
+        self.scale[0] = 1
+        self.scale[1] = 1
+        self.scale[2] = 1
+        self.shear[0] = 0
+        self.shear[1] = 0
+        self.shear[2] = 0
+        self.rstorder = 5
 
 class VolumeTileInfo(Structure): # pylint: disable=too-few-public-methods
     """Equivalent of HAPI's HAPI_VolumeTileInfo
