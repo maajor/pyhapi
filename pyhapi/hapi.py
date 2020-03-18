@@ -271,7 +271,7 @@ def create_input_node(session, node_label):
 
 def create_heightfield_input_node(session, node_label, xsize, ysize, voxel_size):
     """Wrapper for HAPI_CreateHeightfieldInputNode
-    Creates the required node hierarchy needed for Heightfield inputs. 
+    Creates the required node hierarchy needed for Heightfield inputs.
 
     Args:
         session (int64): The session of Houdini you are interacting with.
@@ -303,7 +303,7 @@ def create_heightfield_input_node(session, node_label, xsize, ysize, voxel_size)
 
 def create_heightfield_volume_input_node(session, node_label, xsize, ysize, voxel_size):
     """Wrapper for HAPI_CreateHeightfieldInputNode
-    Creates a volume input node that can be used with Heightfields. 
+    Creates a volume input node that can be used with Heightfields.
 
     Args:
         session (int64): The session of Houdini you are interacting with.
@@ -571,6 +571,24 @@ def get_display_geo_info(session, node_id):
             HDATA.Result(result).name)
     return geo_info
 
+def get_geo_info(session, node_id):
+    """Wrapper for HAPI_GetGeoInfo
+    Get the geometry info struct (HAPI_GeoInfo) on a SOP node.
+
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+
+    Returns:
+        GeoInfo: the geoinfo of queried node
+    """
+    geo_info = HDATA.GeoInfo()
+    result = HAPI_LIB.HAPI_GetGeoInfo(
+        byref(session), node_id, byref(geo_info))
+    assert result == HDATA.Result.SUCCESS,\
+        "GetGeoInfo Failed with {0}".format(
+            HDATA.Result(result).name)
+    return geo_info
 
 def get_part_info(session, node_id, part_id=0):
     """Wrapper for HAPI_GetPartInfo
@@ -628,7 +646,7 @@ def get_volume_info(session, node_id, part_id):
 def get_first_volume_tile(session, node_id, part_id=0):
     """Wrapper for HAPI_GetFirstVolumeTile
     Iterate through a volume based on 8x8x8 sections of the volume \
-    Start iterating through the value of the volume at part_id. 
+    Start iterating through the value of the volume at part_id.
 
     Args:
         session (int): The session of Houdini you are interacting with.
@@ -757,6 +775,8 @@ def get_parameters(session, node_id, node_info):
     Returns:
         Array of ParmInfo: Array of parminfo of querying node
     """
+    if node_info.parmCount == 0:
+        return []
     params = (HDATA.ParmInfo * node_info.parmCount)()
     result = HAPI_LIB.HAPI_GetParameters(
         byref(session), node_id, byref(params), c_int32(0), c_int32(node_info.parmCount))
@@ -1440,7 +1460,7 @@ def set_heightfield_data(session, node_id, part_id, name, data_array):
         part_id (int): The part id
         name (str): The name of the volume used for the heightfield. \
             If set to "height" the values will be used for height information, \
-                if not, the data will used as a mask. 
+                if not, the data will used as a mask.
         data_array (np.ndarray): volume info of this node
 
     """
@@ -1520,7 +1540,7 @@ def get_volume_tile_int_data(session, node_id, part_id, volume_tile_info, tuple_
     data_np = np.frombuffer(data_buffer, np.int32)
     return data_np
 
-def set_volume_tile_float_data(session, node_id, part_id, volume_tile_info, data_array, tuple_size):
+def set_volume_tile_float_data(session, node_id, part_id, volume_tile_info, data_array, tuple_size):# pylint: disable=too-many-arguments
     """Wrapper for HAPI_SetVolumeTileFloatData
     Retrieve floating point values of the voxels pointed to by a tile.
 

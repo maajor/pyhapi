@@ -475,6 +475,7 @@ class HGeoHeightfield(HGeo):
         if isinstance(volume, np.ndarray):
             self.volume = volume
             self.volume_name = volume_name
+            self.transform = transform
             self.xsize, self.ysize, self.tuple_size = volume.shape
             self.zsize = 1
 
@@ -491,9 +492,17 @@ class HGeoHeightfield(HGeo):
             self.volume_info.tileSize = 8
             self.volume_info.type = HDATA.VolumeType.HOUDINI
             self.volume_info.storage = (
-                HDATA.StorageType.FLOAT if volume.type is np.float32 else HDATA.StorageType.INT)
-            self.volume_info.transform = HDATA.Transform() \
-                if isinstance(transform, HDATA.Transform) else transform
+                HDATA.StorageType.FLOAT if volume.dtype is np.dtype('float32') \
+                    else HDATA.StorageType.INT)
+            if isinstance(transform, HDATA.Transform):
+                self.volume_info.transform = transform
+            else:
+                tr = HDATA.Transform()
+                tr.scale[0] = self.xsize
+                tr.scale[1] = self.ysize
+                tr.scale[2] = self.zsize/2.0
+                self.volume_info.transform = tr
+                self.transform = tr
 
     def extract_from_sop(self, session, part_info, node_id, part_id=0):
         """Extract mesh from sop
@@ -521,4 +530,18 @@ class HGeoHeightfield(HGeo):
             session (int64): The session of Houdini you are interacting with.
             node_id (int): The node to add geo.
         """
-        super().commit_to_node(session, node_id)
+        geo_info = HAPI.get_geo_info(session.hapi_session, node_id)
+        volume_info = HAPI.get_volume_info(session.hapi_session, geo_info.nodeId, 0)
+
+        assert volume_info.xLength == self.xsize and volume_info.yLength == self.ysize \
+            and volume_info.zLength == 1 and volume_info.tupleSize == self.tuple_size
+        volume_info.tileSize = 1
+        volume_info.type = HDATA.VolumeType.HOUDINI
+        volume_info.transform = self.transform
+        self.volume_info = volume_info
+
+        #super().commit_to_node(session, geo_info.nodeId)
+
+        HAPI.set_volume_info(session.hapi_session, geo_info.nodeId, 0, volume_info)
+        HAPI.set_heightfield_data(session.hapi_session, node_id, 0, self.volume_name, self.volume)
+        HAPI.commit_geo(session.hapi_session, node_id)

@@ -387,7 +387,57 @@ class HExistingNode(HNodeBase):
             self.name = HAPI.get_string(self.session.hapi_session, self.node_info.nameSH)
             self._collect_params()
             self.instantiated = True
+            self.session.nodes[self.node_id] = self
         except AssertionError as error:
             print("HAPI excecution failed")
             self.instantiated = False
             print(error)
+
+class HHeightfieldInputNode(HNodeBase):
+    """[summary]
+
+    Args:
+        HNodeBase ([type]): [description]
+    """
+
+    def __init__(self, session, node_name, x_size, y_size, voxel_size):# pylint: disable=too-many-arguments
+        super(HHeightfieldInputNode, self).__init__(session)
+        self.node_id, self.height_id, self.mask_id, self.merge_id\
+            = HAPI.create_heightfield_input_node(self.session.hapi_session, node_name,\
+            x_size, y_size, voxel_size)
+        print("Height: "+str(self.height_id))
+        print("Mask: "+str(self.mask_id))
+        print("Merge: "+str(self.merge_id))
+        self.height_node = HExistingNode(session, self.height_id)
+        self.mask_node = HExistingNode(session, self.mask_id)
+        self.merge_node = HExistingNode(session, self.merge_id)
+        self.instantiated = True
+        self.name = node_name
+        self.session.nodes[self.node_id] = self
+        self.node_info = HAPI.get_node_info(self.session.hapi_session, self.node_id)
+        self._collect_params()
+        #hacking.....otherwise voxel size will be 0
+        self.set_param_value("gridspacing", voxel_size)
+        self.cook()
+        self.height_node.cook()
+        self.mask_node.cook()
+
+class HHeightfieldInputVolumeNode(HNodeBase):
+    """[summary]
+
+    Args:
+        HNodeBase ([type]): [description]
+    """
+
+    def __init__(self, session, node_name, x_size, y_size, voxel_size):# pylint: disable=too-many-arguments
+        super(HHeightfieldInputVolumeNode, self).__init__(session)
+        self.node_id = HAPI.create_heightfield_volume_input_node(self.session.hapi_session, node_name,\
+            x_size, y_size, voxel_size)
+        self.instantiated = True
+        self.name = node_name
+        self.session.nodes[self.node_id] = self
+        self.node_info = HAPI.get_node_info(self.session.hapi_session, self.node_id)
+        self._collect_params()
+        #hacking.....otherwise voxel size will be 0
+        self.set_param_value("divsize", voxel_size)
+        self.cook()
