@@ -173,3 +173,43 @@ async def test_cook_async(init_session):
     hda_asset = ph.HAsset(init_session, "hda/SideFX_spaceship.otl")
     asset_node = hda_asset.instantiate(node_name="Spaceship")
     await asset_node.cook_async()
+
+
+def test_create_heightfield_and_set(init_session):
+    """Test create heightfield input node
+    """
+    height_input_node = ph.HHeightfieldInputNode(init_session, "height_input", 500, 500, 1)
+    height_geo = ph.HGeoHeightfield(
+        np.random.random_sample((500, 500, 1)).astype(np.float32)*100,
+        "height")
+    height_geo.commit_to_node(init_session, height_input_node.height_node.node_id)
+    mask_geo = ph.HGeoHeightfield(
+        np.random.random_sample((500, 500, 1)).astype(np.float32),
+        "mask")
+    mask_geo.commit_to_node(init_session, height_input_node.mask_node.node_id)
+    assert height_geo is not None
+    assert mask_geo is not None
+
+def test_create_heightfield_volume_and_set(init_session):
+    """Test create heightfield input volume
+    """
+    heightvolume_input_node = ph.HHeightfieldInputVolumeNode(\
+        init_session, "water_mask", 500, 500, 1)
+    water_mask = ph.HGeoHeightfield(
+        np.random.random_sample((500, 500, 1)).astype(np.float32)*0.5,
+        "water_mask")
+    water_mask.commit_to_node(init_session, heightvolume_input_node.node_id)
+    assert heightvolume_input_node is not None
+
+def test_get_node_geo_heightfield(init_session):
+    """Test get node geo
+    """
+    hda_asset = ph.HAsset(init_session, "hda/heightfield_test.hda")
+    asset_node = hda_asset.instantiate(node_name="HF").cook()
+
+    #get node's all display geo, print volume's data shape and name
+    all_geos = asset_node.get_display_geos()
+    _vol = all_geos[0]
+    _x,_y,_z = _vol.volume.shape
+    assert _x == 500 and _y == 500 and _z == 1 \
+        and _vol.volume_name == "height"

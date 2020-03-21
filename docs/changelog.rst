@@ -1,6 +1,11 @@
 Changelog
 ========================================
 
+0.0.2b0
+-----------------------
+
+* Add HHeightfieldInputNode and HHeightfieldInputVolumeNode for marshall in/out heightfield
+
 0.0.1b1
 -----------------------
 

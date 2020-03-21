@@ -21,7 +21,7 @@
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../pyhapi'))
+sys.path.insert(0, os.path.abspath('../'))
 
 project = 'pyhapi'
 copyright = '2020, Yidong Ma'
@@ -30,7 +30,7 @@ author = 'Maajor'
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = '0.0.1b1'
+release = '0.0.2b0'
 
 
 # -- General configuration ---------------------------------------------------

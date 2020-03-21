@@ -84,5 +84,6 @@ see more in
 [Example: curve_marshall_output](https://github.com/maajor/pyhapi/blob/master/examples/curve_marshall_output.py)  
 [Example: mesh_marshall_input](https://github.com/maajor/pyhapi/blob/master/examples/mesh_marshall_input.py)  
 [Example: mesh_marshall_output](https://github.com/maajor/pyhapi/blob/master/examples/mesh_marshall_output.py)  
-
+[Example: heightfield_marshal_input](https://github.com/maajor/pyhapi/blob/master/examples/heightfield_marshall_input.py)  
+[Example: heightfield_marshal_output](https://github.com/maajor/pyhapi/blob/master/examples/heightfield_marshall_output.py)  
 
