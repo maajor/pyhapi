@@ -251,7 +251,7 @@ class HNodeBase():
             print(error)
             return False
 
-    def cook(self):
+    def cook(self, status_report_interval=1.0, status_verbosity=HDATA.StatusVerbosity.ALL):
         """Cook this node in sync/blocking manner
 
         Returns:
@@ -259,10 +259,11 @@ class HNodeBase():
         """
         if not self.is_inited():
             return None
-        HAPI.cook_node(self.session.hapi_session, self.session.cook_option, self.node_id)
+        HAPI.cook_node(self.session.hapi_session, self.session.cook_option, self.node_id,\
+            status_report_interval, status_verbosity)
         return self
 
-    async def cook_async(self):
+    async def cook_async(self, status_report_interval=1.0, status_verbosity=HDATA.StatusVerbosity.ALL):
         """Cook this node in async/non-blocking manner
 
         Returns:
@@ -271,9 +272,9 @@ class HNodeBase():
         if not self.is_inited():
             return
         await HAPI.cook_node_async(self.session.hapi_session, \
-            self.session.cook_option, self.node_id)
+            self.session.cook_option, self.node_id, status_report_interval, status_verbosity)
 
-    def press_button(self, param_name, status_report_interval=5.0):
+    def press_button(self, param_name, status_report_interval=5.0, status_verbosity=HDATA.StatusVerbosity.ALL):
         """Press button in this node in sync/blocking manner
 
         Args:
@@ -286,7 +287,7 @@ class HNodeBase():
         #paramid = self.param_id_dict[param_name]
         #paraminfo = self.param_info[paramid]
         HAPI.set_parm_int_value(self.session.hapi_session, self.node_id, param_name, 1)
-        HAPI.wait_cook(self.session.hapi_session, status_report_interval)
+        HAPI.wait_cook(self.session.hapi_session, status_report_interval, status_verbosity)
         HAPI.set_parm_int_value(self.session.hapi_session, self.node_id, param_name, 0)
 
     async def press_button_async(self, param_name, status_report_interval=5.0):
