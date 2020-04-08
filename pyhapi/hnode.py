@@ -320,8 +320,12 @@ class HNodeBase():
             child_object_infos = HAPI.get_composed_object_list(self.session.hapi_session,\
                 self.node_id, child_sop_count)
             for objectinfo in child_object_infos:
-                sop_geo = self.__get_display_geo_by_node(objectinfo.nodeId)
-                all_geos.extend(sop_geo)
+                try:
+                    sop_geo = self.__get_display_geo_by_node(objectinfo.nodeId)
+                    all_geos.extend(sop_geo)
+                except AssertionError as error:
+                    nodename = HAPI.get_string(self.session.hapi_session, objectinfo.nameSH)
+                    print("Operator:{0}, cannot retrieve geo, skipped".format(nodename))
             return all_geos
         if self.get_node_type() == HDATA.NodeType.SOP:
             return self.__get_display_geo_by_node(self.node_id)

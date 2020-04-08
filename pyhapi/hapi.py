@@ -866,7 +866,7 @@ def set_parm_int_value(session, node_id, parmname, value, tupleid=0):
         tupleid (int, optional): Index within the parameter's values tuple.. Defaults to 0.
     """
     result = HAPI_LIB.HAPI_SetParmIntValue(
-        byref(session), node_id, c_char_p(parmname.encode('utf-8')), tupleid, value)
+        byref(session), node_id, c_char_p(parmname.encode('utf-8')), tupleid, c_int(value))
     assert result == HDATA.Result.SUCCESS,\
         "SetParmIntValue Failed with {0}".format(
             HDATA.Result(result).name)
