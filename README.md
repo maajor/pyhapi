@@ -9,6 +9,7 @@ Please visit [pyhapi documentation](https://pyhapi.readthedocs.io).
 ## 1. setup PATH  
 * For Windows  
 Add ```C:\Program Files\Side Effects Software\Houdini <version>\custom\houdini\dsolib``` to Environment Path  
+OR run ```powershell setpath.ps1```  
 * For Linux  
 Add ```/opt/hfs<version>/dsolib/``` to LD_LIBRARY_PATH  
 Example:  
@@ -24,7 +25,7 @@ Example:
 # Dependency  
 * Python: >3.6  
 * Numpy: >= 1.15 
-* Houdini: 17.5
+* Houdini >= 17.5
   * License supported:
     * Houdini FX
     * Houdini Core
