@@ -369,7 +369,7 @@ def delete_node(session, node_id):
         "DeleteNode Failed with {0}".format(HDATA.Result(result).name)
 
 
-def cook_node(session, cook_option, node_id):
+def cook_node(session, cook_option, node_id, status_report_interval=0.1, status_verbosity=HDATA.StatusVerbosity.ALL):
     """Wrapper for HAPI_CookNode, a sync/blocking call
     Initiate a cook on this node. \
         Note that this may trigger cooks on other nodes if they are connected.
@@ -384,10 +384,10 @@ def cook_node(session, cook_option, node_id):
     assert result == HDATA.Result.SUCCESS,\
         "CookNode Failed with {0}".format(HDATA.Result(result).name)
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(wait_cook_async(session))
+    loop.run_until_complete(wait_cook_async(session, status_report_interval, status_verbosity))
 
 
-async def cook_node_async(session, cook_option, node_id):
+async def cook_node_async(session, cook_option, node_id, status_report_interval=0.1, status_verbosity=HDATA.StatusVerbosity.ALL):
     """Wrapper for HAPI_CookNode, an async call
     Initiate a cook on this node. \
         Note that this may trigger cooks on other nodes if they are connected.
@@ -401,10 +401,10 @@ async def cook_node_async(session, cook_option, node_id):
         byref(session), node_id, byref(cook_option))
     assert result == HDATA.Result.SUCCESS,\
         "CookNodeAsync Failed with {0}".format(HDATA.Result(result).name)
-    await wait_cook_async(session)
+    await wait_cook_async(session, status_report_interval, status_verbosity)
 
 
-def wait_cook(session, status_report_interval=1):
+def wait_cook(session, status_report_interval=0.1, status_verbosity=HDATA.StatusVerbosity.ALL):
     """An sync call to wait for cooking return result
 
     Args:
@@ -413,10 +413,10 @@ def wait_cook(session, status_report_interval=1):
             Defaults to 1.
     """
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(wait_cook_async(session, status_report_interval))
+    loop.run_until_complete(wait_cook_async(session, status_report_interval, status_verbosity))
 
 
-async def wait_cook_async(session, status_report_interval=1):
+async def wait_cook_async(session, status_report_interval=0.1, status_verbosity=HDATA.StatusVerbosity.ALL):
     """An async call to wait for cooking return result
 
     Args:
@@ -424,7 +424,8 @@ async def wait_cook_async(session, status_report_interval=1):
         status_report_interval (int, optional): time interval in seconds to query cook status. \
             Defaults to 1.
     """
-    print("-------------Start Cooking!---------------")
+    if status_verbosity>HDATA.StatusVerbosity.WARNINGS:
+        print("-------------Start Cooking!---------------")
     cook_status = c_int32()
     cook_result = HDATA.Result.ALREADY_INITIALIZED
     while True:
@@ -432,16 +433,18 @@ async def wait_cook_async(session, status_report_interval=1):
             byref(session), 2, byref(cook_status))
         continuestate = cook_status.value > HDATA.State.MAX_READY_STATE\
             and cook_result == HDATA.Result.SUCCESS
-        print("Cook Status at {0} : {1}".format(datetime.now().\
-            strftime('%H:%M:%S'), _get_status_string(session,\
+        if status_verbosity>HDATA.StatusVerbosity.WARNINGS:
+            print("Cook Status at {0} : {1}".format(datetime.now().\
+                strftime('%H:%M:%S'), _get_status_string(session,\
                 HDATA.StatusType.COOK_STATE,\
-                    HDATA.StatusVerbosity.MESSAGES)))
+                    status_verbosity)))
         if not continuestate:
             break
         await asyncio.sleep(status_report_interval)
     if cook_status.value == HDATA.State.READY_WITH_FATAL_ERRORS:
         print("Cook with Fatal Error: {0}".format(_get_status_string(session)))
-    print("-------------Finish Cooking!---------------")
+    if status_verbosity>HDATA.StatusVerbosity.WARNINGS:
+        print("-------------Finish Cooking!---------------")
     assert cook_result == HDATA.Result.SUCCESS and\
         cook_status.value == HDATA.State.READY,\
         "CookNode Failed with {0} and Cook Status is {1}".\
@@ -863,7 +866,7 @@ def set_parm_int_value(session, node_id, parmname, value, tupleid=0):
         tupleid (int, optional): Index within the parameter's values tuple.. Defaults to 0.
     """
     result = HAPI_LIB.HAPI_SetParmIntValue(
-        byref(session), node_id, c_char_p(parmname.encode('utf-8')), tupleid, value)
+        byref(session), node_id, c_char_p(parmname.encode('utf-8')), tupleid, c_int(value))
     assert result == HDATA.Result.SUCCESS,\
         "SetParmIntValue Failed with {0}".format(
             HDATA.Result(result).name)
@@ -1447,7 +1450,7 @@ def get_faces(session, node_id, part_info):
     for i in range(1, len(face_counts)):
         face_counts[i] = face_counts[i-1] + face_counts[i]
     faces = np.split(vertex_list, face_counts)
-    return faces
+    return faces[:-1]#remove last empty face
 
 def set_heightfield_data(session, node_id, part_id, name, data_array):
     """Wrapper for HAPI_SetHeightFieldData
