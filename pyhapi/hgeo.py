@@ -49,6 +49,7 @@ geo_inputnode.set_geometry(cube_geo)
 
 """
 import numpy as np
+import logging
 
 from . import hdata as HDATA
 from . import hapi as HAPI
@@ -109,7 +110,7 @@ class HGeo():
         """
         count, tuple_size = data.shape
         if count != self.point_count:
-            print("AddPointAttrib Error, Data length {0} not compatible with point count {1}".\
+            logging.error("AddPointAttrib Error, Data length {0} not compatible with point count {1}".\
                 format(count, self.point_count))
             return
         attrib_info = HDATA.AttributeInfo()
@@ -134,7 +135,7 @@ class HGeo():
         """
         count, tuple_size = data.shape
         if count != self.vertex_count:
-            print("AddVertexAttrib Error, Data length {0} not compatible with vertex count {1}".\
+            logging.error("AddVertexAttrib Error, Data length {0} not compatible with vertex count {1}".\
                 format(count, self.vertex_count))
             return
         attrib_info = HDATA.AttributeInfo()
@@ -159,7 +160,7 @@ class HGeo():
         """
         count, tuple_size = data.shape
         if count != self.face_count:
-            print("AddPrimAttrib Error, Data length {0} not compatible with prim count {1}".\
+            logging.error("AddPrimAttrib Error, Data length {0} not compatible with prim count {1}".\
                 format(count, self.face_count))
             return
         attrib_info = HDATA.AttributeInfo()
@@ -184,7 +185,7 @@ class HGeo():
         """
         count, tuple_size = data.shape
         if count != self.detail_count:
-            print("add_detail_attrib Error, Data length {0} not compatible with detail count {1}".\
+            logging.error("add_detail_attrib Error, Data length {0} not compatible with detail count {1}".\
                 format(count, self.detail_count))
             return
         attrib_info = HDATA.AttributeInfo()

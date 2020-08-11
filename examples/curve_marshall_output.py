@@ -3,11 +3,13 @@
 Author  : Maajor
 Email   : info@ma-yidong.com
 """
+import logging
 import pyhapi as ph
 
 def main():
     """Main
     """
+    logging.basicConfig(level=logging.INFO)
     session = ph.HSessionManager.get_or_create_default_session()
 
     #load hda asset and instantiate
@@ -17,9 +19,9 @@ def main():
     #get node's all display geo, print curveinfo and P
     all_geos = asset_node.get_display_geos()
     for geo in all_geos:
-        print(geo.get_attrib_data(ph.AttributeOwner.POINT, "P"))
+        logging.info(geo.get_attrib_data(ph.AttributeOwner.POINT, "P"))
         if isinstance(geo, ph.HGeoCurve):
-            print(geo.curve_info)
+            logging.info(geo.curve_info)
 
     session.save_hip("modifiedScene.hip")
 

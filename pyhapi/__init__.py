@@ -9,4 +9,4 @@ from .hsession import HSession, HSessionManager
 from .hnode import HNode, HInputNode, HHeightfieldInputNode, HHeightfieldInputVolumeNode
 from .hasset import HAsset
 
-__version__ = "0.0.2b0"
+__version__ = "0.0.2b1"

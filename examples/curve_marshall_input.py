@@ -3,6 +3,7 @@
 Author  : Maajor
 Email   : info@ma-yidong.com
 """
+import logging
 import numpy as np
 
 import pyhapi as ph
@@ -10,6 +11,7 @@ import pyhapi as ph
 def main():
     """Main
     """
+    logging.basicConfig(level=logging.INFO)
     session = ph.HSessionManager.get_or_create_default_session()
 
     #create an inputnode where you can set geometry

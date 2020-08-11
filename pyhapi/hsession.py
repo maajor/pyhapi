@@ -26,6 +26,7 @@ box = ph.HNode(session, "geo", "ProgrammaticBox")
 session.save_hip("test.hip")
 
 """
+import logging
 from . import hdata as HDATA
 from . import hapi as HAPI
 from .hnode import HExistingNode
@@ -118,8 +119,8 @@ class HSession():
             self.__initialize_session(rootpath)
             return True
         except AssertionError as error:
-            print("HAPI excecution failed")
-            print(error)
+            logging.error("HAPI excecution failed")
+            logging.error(error)
             return False
 
     def __initialize_session(self, rootpath):
@@ -141,7 +142,7 @@ class HSession():
             bool: if the close success
         """
         if self.hapi_session is not None and self.is_session_valid():
-            print("Close Session")
+            logging.info("Close Session")
             HAPI.cleanup(self.hapi_session)
             HAPI.close_session(self.hapi_session)
         return True
@@ -165,7 +166,7 @@ class HSession():
             before saving the scene file.
         """
         HAPI.save_hip_file(self.hapi_session, filename, lock_nodes)
-        print("Session saved to {0}".format(filename))
+        logging.info("Session saved to {0}".format(filename))
 
     def restart_session(self):
         """Restart current session

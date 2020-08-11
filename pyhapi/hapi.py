@@ -9,6 +9,7 @@ from ctypes import cdll, POINTER, c_int, c_int32, c_int64,\
 import asyncio
 from datetime import datetime
 import platform
+import logging
 
 import numpy as np
 
@@ -86,7 +87,7 @@ def start_thrift_named_pipe_server(server_options):
     assert result == HDATA.Result.SUCCESS,\
         "StartThriftNamedPipeServer Failed with {0}".format(
             HDATA.Result(result).name)
-    print("Session Created with Process Id: {0}".format(processid.value))
+    logging.info("Session Created with Process Id: {0}".format(processid.value))
     return processid
 
 
@@ -425,7 +426,7 @@ async def wait_cook_async(session, status_report_interval=0.1, status_verbosity=
             Defaults to 1.
     """
     if status_verbosity>HDATA.StatusVerbosity.WARNINGS:
-        print("-------------Start Cooking!---------------")
+        logging.info("-------------Start Cooking!---------------")
     cook_status = c_int32()
     cook_result = HDATA.Result.ALREADY_INITIALIZED
     while True:
@@ -434,7 +435,7 @@ async def wait_cook_async(session, status_report_interval=0.1, status_verbosity=
         continuestate = cook_status.value > HDATA.State.MAX_READY_STATE\
             and cook_result == HDATA.Result.SUCCESS
         if status_verbosity>HDATA.StatusVerbosity.WARNINGS:
-            print("Cook Status at {0} : {1}".format(datetime.now().\
+            logging.info("Cook Status at {0} : {1}".format(datetime.now().\
                 strftime('%H:%M:%S'), _get_status_string(session,\
                 HDATA.StatusType.COOK_STATE,\
                     status_verbosity)))
@@ -442,9 +443,9 @@ async def wait_cook_async(session, status_report_interval=0.1, status_verbosity=
             break
         await asyncio.sleep(status_report_interval)
     if cook_status.value == HDATA.State.READY_WITH_FATAL_ERRORS:
-        print("Cook with Fatal Error: {0}".format(_get_status_string(session)))
+        logging.error("Cook with Fatal Error: {0}".format(_get_status_string(session)))
     if status_verbosity>HDATA.StatusVerbosity.WARNINGS:
-        print("-------------Finish Cooking!---------------")
+        logging.info("-------------Finish Cooking!---------------")
     assert cook_result == HDATA.Result.SUCCESS and\
         cook_status.value == HDATA.State.READY,\
         "CookNode Failed with {0} and Cook Status is {1}".\

@@ -39,6 +39,7 @@ another_box.connect_node_input(geo_inputnode)
 another_box.disconnect_node_input(0).delete()
 
 """
+import logging
 from . import hapi as HAPI
 from . import hdata as HDATA
 from .hgeo import HGeoMesh, HGeoCurve, HGeo, HGeoHeightfield, HGeoVolume
@@ -71,7 +72,7 @@ class HNodeBase():
             bool: If this node is inited
         """
         if not self.instantiated:
-            print("Asset Not Instantiated")
+            logging.warn("Asset Not Instantiated")
         return self.instantiated
 
     def get_node_type(self):
@@ -157,7 +158,7 @@ class HNodeBase():
                 else:
                     extract_geo = HGeoVolume()
             else:
-                print("Type of geo extraction not implemented {0}".format(part_info.type))
+                logging.critical("Type of geo extraction not implemented {0}".format(part_info.type))
                 extract_geo = HGeo()
             extract_geo.extract_from_sop(self.session, part_info, geo_info.nodeId, part_id)
             all_geos.append(extract_geo)
@@ -247,8 +248,8 @@ class HNodeBase():
                     self.node_id, paramid, value)
             return True
         except AssertionError as error:
-            print("HAPI excecution failed")
-            print(error)
+            logging.error("HAPI excecution failed")
+            logging.error(error)
             return False
 
     def cook(self, status_report_interval=1.0, status_verbosity=HDATA.StatusVerbosity.ALL):
@@ -325,11 +326,11 @@ class HNodeBase():
                     all_geos.extend(sop_geo)
                 except AssertionError as error:
                     nodename = HAPI.get_string(self.session.hapi_session, objectinfo.nameSH)
-                    print("Operator:{0}, cannot retrieve geo, skipped".format(nodename))
+                    logging.error("Operator:{0}, cannot retrieve geo, skipped".format(nodename))
             return all_geos
         if self.get_node_type() == HDATA.NodeType.SOP:
             return self.__get_display_geo_by_node(self.node_id)
-        print("Operator type is {0}, cannot retrieve geo".format(self.get_node_type()))
+        logging.error("Operator type is {0}, cannot retrieve geo".format(self.get_node_type()))
         return None
 
     def delete(self):
@@ -339,8 +340,8 @@ class HNodeBase():
             HAPI.delete_node(self.session.hapi_session, self.node_id)
             self.instantiated = False
         except AssertionError as error:
-            print("HAPI excecution failed")
-            print(error)
+            logging.error("HAPI excecution failed")
+            logging.error(error)
 
 
 class HNode(HNodeBase):
@@ -394,9 +395,9 @@ class HExistingNode(HNodeBase):
             self.instantiated = True
             self.session.nodes[self.node_id] = self
         except AssertionError as error:
-            print("HAPI excecution failed")
+            logging.error("HAPI excecution failed")
             self.instantiated = False
-            print(error)
+            logging.error(error)
 
 class HHeightfieldInputNode(HNodeBase):
     """A node dedicated to marshall heightfield datas

@@ -3,11 +3,13 @@
 Author  : Maajor
 Email   : info@ma-yidong.com
 """
+import logging
 import pyhapi as ph
 
 def main():
     """Main
     """
+    logging.basicConfig(level=logging.INFO)
     session = ph.HSessionManager.get_or_create_default_session()
 
     #load hda asset and instantiate
@@ -18,8 +20,8 @@ def main():
     all_geos = asset_node.get_display_geos()
     for geo in all_geos:
         if isinstance(geo, ph.HGeoHeightfield):
-            print(geo.volume.shape)
-            print(geo.volume_name)
+            logging.info(geo.volume.shape)
+            logging.info(geo.volume_name)
 
     session.save_hip("modifiedScene.hip")
 
