@@ -34,6 +34,8 @@ def main():
     logging.info("ProgrammaticBox's input node is {0}".format(input_node.name))
     log_childnodes(asset_node)
 
+    another_box.rename("Renamed")
+
     #delete sop node
     another_box\
     		.disconnect_node_input(0)\

@@ -333,6 +333,12 @@ class HNodeBase():
         logging.error("Operator type is {0}, cannot retrieve geo".format(self.get_node_type()))
         return None
 
+    def rename(self, new_name):
+        """rename this node
+        """
+        HAPI.rename_node(self.session.hapi_session, self.node_id, new_name)
+        self.name = new_name
+
     def delete(self):
         """Delete current node
         """

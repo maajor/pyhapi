@@ -1598,6 +1598,20 @@ def commit_geo(session, node_id):
     assert result == HDATA.Result.SUCCESS,\
         "CommitGeo Failed with {0}".format(HDATA.Result(result).name)
 
+def rename_node(session, node_id, new_name):
+    """Wrapper for HAPI_RenameNode
+    Rename a node that you created. Only nodes with their \
+        HAPI_NodeInfo::createdPostAssetLoad set to true can be renamed this way.
+
+    Args:
+        session (int64): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        new_name (str): New name of node.
+    """
+    result = HAPI_LIB.HAPI_RenameNode(byref(session), node_id, c_char_p(new_name.encode('utf-8')))
+    assert result == HDATA.Result.SUCCESS,\
+        "Renamed Failed with {0}".format(HDATA.Result(result).name)
+
 
 def save_hip_file(session, hipname, lock_nodes=True):
     """Wrapper for HAPI_SaveHIPFile
