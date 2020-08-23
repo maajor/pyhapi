@@ -18,6 +18,7 @@ asset_node = hda_asset.instantiate(node_name="Processor").cook()
 """
 from . import hapi as HAPI
 from .hnode import HNode
+from ctypes import c_int32
 
 class HAsset():
     """An class representing an HDA asset.
@@ -38,11 +39,8 @@ class HAsset():
         """
         self.instantiated = False
         self.hda_path = hdapath
-        self.session = session
-        asset_lib_id = HAPI.load_asset_library_from_file(
-            session.hapi_session, self.hda_path)
-        self.asset_names = HAPI.get_available_assets(
-            session.hapi_session, asset_lib_id)
+        session.reload_asset_library(self)
+
 
     def instantiate(self, node_name="Node", operator_id=0):
         """Instantiate an operator in this node
@@ -57,6 +55,14 @@ class HAsset():
         """
         node = HNode(self.session, self.asset_names[operator_id], node_name)
         return node
+
+    @property
+    def asset_names(self):
+        return HAPI.get_available_assets(
+            self.session.hapi_session, self.asset_lib_id)
+
+    def reload(self):
+        self.session.reload_asset_library(self)
 
     def get_assets_names(self):
         """Get all operator names in this asset

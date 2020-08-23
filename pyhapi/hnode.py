@@ -345,6 +345,7 @@ class HNodeBase():
         try:
             HAPI.delete_node(self.session.hapi_session, self.node_id)
             self.instantiated = False
+            self.session.nodes.pop(self.node_id)
         except AssertionError as error:
             logging.error("HAPI excecution failed")
             logging.error(error)

@@ -63,6 +63,8 @@ class HSession():
         self.cook_option = HAPI.get_cook_options()
         self.root_path = ""
 
+        self.asset_libs = {}
+
     def get_node(self, node_id):
         """Get node in this session by HAPI_NodeId
 
@@ -82,6 +84,18 @@ class HSession():
             self.nodes[node_id] = existing_node
             return existing_node
         return None
+
+    def reload_asset_library(self, asset):
+        asset.session = self
+        asset_lib_id = HAPI.load_asset_library_from_file(
+            self.hapi_session, asset.hda_path)
+
+        asset.asset_lib_id = asset_lib_id
+        self.asset_libs[asset.asset_lib_id.value] = asset
+
+        # asset.asset_names = HAPI.get_available_assets(
+        #    self.hapi_session, asset_lib_id)
+
 
     def create_thrift_pipe_session(self, rootpath, auto_close=True, timeout=10000.0):
         """Create the session in thrift-pipe manner
