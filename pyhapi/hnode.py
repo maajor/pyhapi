@@ -169,7 +169,7 @@ class HNodeBase():
         self.param_info = HAPI.get_parameters(\
             self.session.hapi_session, self.node_id, self.node_info)
         for i in range(0, self.node_info.parmCount):
-            namesh = self.param_info[i].labelSH
+            namesh = self.param_info[i].nameSH
             namestr = HAPI.get_string(self.session.hapi_session, namesh)
             self.param_id_dict[namestr] = i
 
