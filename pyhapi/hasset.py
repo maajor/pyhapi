@@ -59,7 +59,7 @@ class HAsset():
     @property
     def asset_names(self):
         return HAPI.get_available_assets(
-            self.session.hapi_session, self.asset_lib_id)
+            self.session.hapi_session, self.library_id)
 
     def reload(self):
         self.session.reload_asset_library(self)

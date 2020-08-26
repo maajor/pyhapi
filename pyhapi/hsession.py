@@ -90,8 +90,8 @@ class HSession():
         asset_lib_id = HAPI.load_asset_library_from_file(
             self.hapi_session, asset.hda_path)
 
-        asset.asset_lib_id = asset_lib_id
-        self.asset_libs[asset.asset_lib_id.value] = asset
+        asset.library_id = asset_lib_id
+        self.asset_libs[asset.library_id.value] = asset
 
         # asset.asset_names = HAPI.get_available_assets(
         #    self.hapi_session, asset_lib_id)

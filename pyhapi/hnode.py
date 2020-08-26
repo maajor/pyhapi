@@ -64,6 +64,7 @@ class HNodeBase():
         self.node_info = HDATA.NodeInfo()
         self.param_info = []
         self.param_id_dict = {}
+        self.param_choice_lists = {}
 
     def is_inited(self):
         """If this node is inited
@@ -122,6 +123,9 @@ class HNodeBase():
         input_node_id = HAPI.query_node_input(self.session.hapi_session, self.node_id, input_index)
         return self.session.get_node(input_node_id)
 
+    def get_node_input_name(self, input_index = 0):
+        return HAPI.get_node_input_name(self.session.hapi_session, self.node_id, input_index)
+
     def get_child_nodes(self):
         """Get children node information
 
@@ -173,6 +177,14 @@ class HNodeBase():
             namestr = HAPI.get_string(self.session.hapi_session, namesh)
             self.param_id_dict[namestr] = i
 
+        # collect choice lists
+        choice_lists = HAPI.get_parm_choice_lists(self.session.hapi_session, self.node_id)
+        for c in choice_lists:
+            if c.parentParmId not in self.param_choice_lists:
+                self.param_choice_lists[c.parentParmId] = []
+            self.param_choice_lists[c.parentParmId].append(c)
+
+
     def get_param_names(self):
         """Get all param in this node
 
@@ -200,7 +212,12 @@ class HNodeBase():
             return type(str)
         return type(None)
 
-    def get_param_value(self, param_name):
+    def get_param_choice_list(self, param_name):
+        paramid = self.param_id_dict[param_name]
+        return self.param_choice_lists[paramid]
+
+
+    def get_param_value(self, param_name, tupleid=0):
         """Get param value
 
         Args:
@@ -214,11 +231,11 @@ class HNodeBase():
         paramid = self.param_id_dict[param_name]
         paraminfo = self.param_info[paramid]
         if paraminfo.is_int():
-            return HAPI.get_parm_int_value(self.session.hapi_session, self.node_id, param_name)
+            return HAPI.get_parm_int_value(self.session.hapi_session, self.node_id, param_name, tupleid)
         if paraminfo.is_float():
-            return HAPI.get_parm_float_value(self.session.hapi_session, self.node_id, param_name)
+            return HAPI.get_parm_float_value(self.session.hapi_session, self.node_id, param_name, tupleid)
         if paraminfo.is_string():
-            return HAPI.get_parm_string_value(self.session.hapi_session, self.node_id, param_name)
+            return HAPI.get_parm_string_value(self.session.hapi_session, self.node_id, param_name, tupleid)
         return None
 
     def set_param_value(self, param_name, value):

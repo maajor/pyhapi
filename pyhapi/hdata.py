@@ -719,7 +719,7 @@ class GeoInfo(StructureWithEnums): # pylint: disable=too-few-public-methods
     }
 
 
-class CookOptions(Structure): # pylint: disable=too-few-public-methods
+class CookOptions(StructureWithEnums): # pylint: disable=too-few-public-methods
     """Equivalent of HAPI's HAPI_CookOptions
     """
     _fields_ = [('splitGeosByGroup', c_bool),
@@ -731,11 +731,14 @@ class CookOptions(Structure): # pylint: disable=too-few-public-methods
                 ('clearErrorsAndWarnings', c_bool),
                 ('cookTemplatedGeos', c_bool),
                 ('splitPointsByVertexAttributes', c_bool),
+                ('packedPrimInstancingMode', c_int32),
                 ('handleBoxPartTypes', c_bool),
                 ('handleSpherePartTypes', c_bool),
                 ('checkPartChanges', c_bool),
                 ('extraFlags', c_int32)]
-
+    _map = {
+        'packedPrimInstancingMode' : PackedPrimInstancingMode
+    }
 
 class NodeInfo(StructureWithEnums): # pylint: disable=too-few-public-methods
     """Equivalent of HAPI's HAPI_NodeInfo
@@ -818,6 +821,7 @@ class ParmInfo(StructureWithEnums):
         "rampType": RampType
     }
 
+
     def is_int(self):
         """If this attribute is int type
 
@@ -876,3 +880,15 @@ class ParmInfo(StructureWithEnums):
         """
         return self.type >= ParmType.NONVALUE_START and\
             self.type <= ParmType.NONVALUE_END
+
+
+
+class ParmChoiceInfo(StructureWithEnums):
+    """Equivalent of HAPI's HAPI_ParmChoiceInfo
+    """
+    _fields_ = [
+        ('parentParmId', c_int32),
+        ('labelSH', c_int32),
+        ('valueSH', c_int32)]
+
+

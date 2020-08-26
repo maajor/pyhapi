@@ -200,6 +200,79 @@ def load_asset_library_from_file(session, file_path, allow_overwrite=True):
             HDATA.Result(result).name)
     return asset_lib_id
 
+def get_asset_definition_parm_counts(session, library_id, asset_name):
+    pc = c_int32()
+    ic = c_int32()
+    fc = c_int32()
+    sc = c_int32()
+    cc = c_int32()
+
+    result = HAPI_LIB.HAPI_GetAssetDefinitionParmCounts(
+        byref(session), 
+        library_id,
+        c_char_p(asset_name.encode("utf-8")),
+        byref(pc), byref(ic), byref(fc), byref(sc), byref(cc))
+    assert result == HDATA.Result.SUCCESS,\
+        "GetAssetDefinitionParmCounts Failed with {0}".format(
+            HDATA.Result(result).name)
+
+    return pc,ic,fc,sc,cc
+
+def get_asset_definition_parm_infos(session, library_id, asset_name):
+    pc,ic,fc,sc,cc = get_asset_definition_parm_counts(session, library_id, asset_name)
+
+    parm_info_buf = (HDATA.ParmInfo * pc.value)()
+    
+    result = HAPI_LIB.HAPI_GetAssetDefinitionParmInfos(
+        byref(session),
+        library_id,        
+        c_char_p(asset_name.encode("utf-8")),
+        byref(parm_info_buf),
+        0, pc.value)
+
+    assert result == HDATA.Result.SUCCESS,\
+        "GetAssetDefinitionParmCounts Failed with {0}".format(
+            HDATA.Result(result).name)
+
+    return parm_info_buf
+
+def get_asset_definition_parm_values(session, library_id, asset_name, string_evaluate = False):
+    pc,ic,fc,sc,cc = get_asset_definition_parm_counts(session, library_id, asset_name)
+
+    parm_info_buf = (HDATA.ParmInfo * pc.value)()
+    
+    result = HAPI_LIB.HAPI_GetAssetDefinitionParmInfos(
+        byref(session),
+        library_id,        
+        c_char_p(asset_name.encode("utf-8")),
+        byref(parm_info_buf),
+        0, pc.value)
+
+    assert result == HDATA.Result.SUCCESS,\
+        "get_asset_definition_parm_values Failed with {0}".format(
+            HDATA.Result(result).name)
+
+    int_buf = (c_int32 * ic.value)()
+    float_buf = (c_float * fc.value)()
+    sh_buf = (c_int32 * sc.value)()
+    choice_buf = (HDATA.ParmChoiceInfo * cc.value)()
+
+    print(library_id, asset_name)
+    print("get values\n\n")
+
+    result = HAPI_LIB.HAPI_GetAssetDefinitionParmValues(
+        byref(session), library_id, c_char_p(asset_name.encode("utf-8")),
+        byref(int_buf), 0, ic, 
+        byref(float_buf), 0, fc,
+        c_bool(string_evaluate),
+        byref(sh_buf), 0, sc,
+        byref(choice_buf), 0, cc)
+    # TODO: get this working    
+    assert result == HDATA.Result.SUCCESS,\
+        "get_asset_definition_parm_values Failed with {0}".format(
+            HDATA.Result(result).name)
+    
+
 
 def _get_available_asset_count(session, asset_lib_id):
     asset_count = c_int32()
@@ -766,6 +839,12 @@ def get_asset_info(session, node_id):
         "GetAssetInfo Failed with {0}".format(HDATA.Result(result).name)
     return asset_info
 
+def get_node_input_name(session, node_id, input_idx : int):
+    namesh = c_int32()
+    result = HAPI_LIB.HAPI_GetNodeInputName(byref(session), c_int(node_id), input_idx, byref(namesh))
+    assert result == HDATA.Result.SUCCESS,\
+        "GetAssetInfo Failed with {0}".format(HDATA.Result(result).name)
+    return get_string(session, namesh)
 
 def get_parameters(session, node_id, node_info):
     """Wrapper for HAPI_GetParameters
@@ -788,6 +867,15 @@ def get_parameters(session, node_id, node_info):
         "GetParameters Failed with {0}".format(HDATA.Result(result).name)
     return params
 
+def get_parm_choice_lists(session, node_id):
+    node_info : HDATA.NodeInfo = get_node_info(session, node_id)
+
+    parm_choices_array = (HDATA.ParmChoiceInfo * node_info.parmChoiceCount)()
+    result = HAPI_LIB.HAPI_GetParmChoiceLists(byref(session), c_int(node_id), byref(parm_choices_array), 0, node_info.parmChoiceCount)
+    assert result == HDATA.Result.SUCCESS,\
+        "GetParmChoiceLists Failed with {0}".format(HDATA.Result(result).name)
+
+    return parm_choices_array
 
 def get_parm_int_value(session, node_id, parmname, tupleid=0):
     """Wrapper for HAPI_GetParmIntValue
