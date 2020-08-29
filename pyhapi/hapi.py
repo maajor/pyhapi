@@ -801,6 +801,13 @@ def compose_object_list(session, node_id):
             HDATA.Result(result).name)
     return child_count.value
 
+def get_manager_node_id(session, node_type):
+    root_id = c_int32()
+    result = HAPI_LIB.HAPI_GetManagerNodeId(byref(session), node_type, byref(root_id))
+    assert result == HDATA.Result.SUCCESS,\
+        "GetManagerNodeId Failed with {0}".format(
+            HDATA.Result(result).name)
+    return root_id.value
 
 def get_node_info(session, node_id):
     """Wrapper for HAPI_GetNodeInfo
@@ -868,13 +875,13 @@ def get_parameters(session, node_id, node_info):
     return params
 
 def get_parm_choice_lists(session, node_id):
-    node_info : HDATA.NodeInfo = get_node_info(session, node_id)
+    node_info : HDATA.NodeInfo = get_node_info(session, node_id)    
 
     parm_choices_array = (HDATA.ParmChoiceInfo * node_info.parmChoiceCount)()
-    result = HAPI_LIB.HAPI_GetParmChoiceLists(byref(session), c_int(node_id), byref(parm_choices_array), 0, node_info.parmChoiceCount)
-    assert result == HDATA.Result.SUCCESS,\
-        "GetParmChoiceLists Failed with {0}".format(HDATA.Result(result).name)
-
+    if node_info.parmChoiceCount != 0:        
+        result = HAPI_LIB.HAPI_GetParmChoiceLists(byref(session), c_int(node_id), byref(parm_choices_array), 0, node_info.parmChoiceCount)
+        assert result == HDATA.Result.SUCCESS,\
+            "GetParmChoiceLists Failed with {0}".format(HDATA.Result(result).name)
     return parm_choices_array
 
 def get_parm_int_value(session, node_id, parmname, tupleid=0):

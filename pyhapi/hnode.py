@@ -40,6 +40,7 @@ another_box.disconnect_node_input(0).delete()
 
 """
 import logging
+import traceback
 from . import hapi as HAPI
 from . import hdata as HDATA
 from .hgeo import HGeoMesh, HGeoCurve, HGeo, HGeoHeightfield, HGeoVolume
@@ -172,6 +173,8 @@ class HNodeBase():
         self.node_info = HAPI.get_node_info(self.session.hapi_session, self.node_id)
         self.param_info = HAPI.get_parameters(\
             self.session.hapi_session, self.node_id, self.node_info)
+        
+        self.param_id_dict.clear()
         for i in range(0, self.node_info.parmCount):
             namesh = self.param_info[i].nameSH
             namestr = HAPI.get_string(self.session.hapi_session, namesh)
@@ -179,11 +182,14 @@ class HNodeBase():
 
         # collect choice lists
         choice_lists = HAPI.get_parm_choice_lists(self.session.hapi_session, self.node_id)
+        self.param_choice_lists.clear()
         for c in choice_lists:
             if c.parentParmId not in self.param_choice_lists:
                 self.param_choice_lists[c.parentParmId] = []
             self.param_choice_lists[c.parentParmId].append(c)
 
+    def refresh_params(self):
+        self._collect_params()
 
     def get_param_names(self):
         """Get all param in this node
@@ -202,8 +208,8 @@ class HNodeBase():
         Returns:
             type: type of param
         """
-        paramid = self.param_id_dict[param_name]
-        paraminfo = self.param_info[paramid]
+        param_idx = self.param_id_dict[param_name]
+        paraminfo = self.param_info[param_idx]
         if paraminfo.is_int():
             return type(int)
         if paraminfo.is_float():
@@ -213,8 +219,9 @@ class HNodeBase():
         return type(None)
 
     def get_param_choice_list(self, param_name):
-        paramid = self.param_id_dict[param_name]
-        return self.param_choice_lists[paramid]
+        param_idx = self.param_id_dict[param_name]
+        param_id = self.param_info[param_idx].id
+        return self.param_choice_lists[param_id]
 
 
     def get_param_value(self, param_name, tupleid=0):
@@ -228,8 +235,8 @@ class HNodeBase():
         """
         if not self.is_inited():
             return None
-        paramid = self.param_id_dict[param_name]
-        paraminfo = self.param_info[paramid]
+        param_idx = self.param_id_dict[param_name]
+        paraminfo = self.param_info[param_idx]
         if paraminfo.is_int():
             return HAPI.get_parm_int_value(self.session.hapi_session, self.node_id, param_name, tupleid)
         if paraminfo.is_float():
@@ -238,7 +245,7 @@ class HNodeBase():
             return HAPI.get_parm_string_value(self.session.hapi_session, self.node_id, param_name, tupleid)
         return None
 
-    def set_param_value(self, param_name, value):
+    def set_param_value(self, param_name, value, tupleid=0):
         """Set parameter value
 
         Args:
@@ -251,25 +258,25 @@ class HNodeBase():
         """
         if not self.is_inited():
             return False
-        paramid = self.param_id_dict[param_name]
-        paraminfo = self.param_info[paramid]
+        param_idx = self.param_id_dict[param_name]
+        paraminfo = self.param_info[param_idx]
         try:
             if paraminfo.is_int():
                 HAPI.set_parm_int_value(self.session.hapi_session, \
-                    self.node_id, param_name, value)
+                    self.node_id, param_name, value, tupleid)
             if paraminfo.is_float():
                 HAPI.set_parm_float_value(\
-                    self.session.hapi_session, self.node_id, param_name, value)
+                    self.session.hapi_session, self.node_id, param_name, value, tupleid)
             if paraminfo.is_string():
                 HAPI.set_parm_string_value(self.session.hapi_session, \
-                    self.node_id, paramid, value)
+                    self.node_id, paraminfo.id, value, tupleid)
             return True
         except AssertionError as error:
             logging.error("HAPI excecution failed")
             logging.error(error)
             return False
 
-    def cook(self, status_report_interval=1.0, status_verbosity=HDATA.StatusVerbosity.ALL):
+    def cook(self, cook_option : HDATA.CookOptions = None, status_report_interval=1.0, status_verbosity=HDATA.StatusVerbosity.ALL):
         """Cook this node in sync/blocking manner
 
         Returns:
@@ -277,11 +284,13 @@ class HNodeBase():
         """
         if not self.is_inited():
             return None
-        HAPI.cook_node(self.session.hapi_session, self.session.cook_option, self.node_id,\
+        if cook_option == None:
+            cook_option = self.session.cook_option
+        HAPI.cook_node(self.session.hapi_session, cook_option, self.node_id,\
             status_report_interval, status_verbosity)
         return self
 
-    async def cook_async(self, status_report_interval=1.0, status_verbosity=HDATA.StatusVerbosity.ALL):
+    async def cook_async(self, cook_option : HDATA.CookOptions = None, status_report_interval=1.0, status_verbosity=HDATA.StatusVerbosity.ALL):
         """Cook this node in async/non-blocking manner
 
         Returns:
@@ -289,8 +298,10 @@ class HNodeBase():
         """
         if not self.is_inited():
             return
+        if cook_option == None:
+            cook_option = self.session.cook_option
         await HAPI.cook_node_async(self.session.hapi_session, \
-            self.session.cook_option, self.node_id, status_report_interval, status_verbosity)
+            cook_option, self.node_id, status_report_interval, status_verbosity)
 
     def press_button(self, param_name, status_report_interval=5.0, status_verbosity=HDATA.StatusVerbosity.ALL):
         """Press button in this node in sync/blocking manner
@@ -421,6 +432,7 @@ class HExistingNode(HNodeBase):
         except AssertionError as error:
             logging.error("HAPI excecution failed")
             self.instantiated = False
+            traceback.print_tb(error.__traceback__)
             logging.error(error)
 
 class HHeightfieldInputNode(HNodeBase):
