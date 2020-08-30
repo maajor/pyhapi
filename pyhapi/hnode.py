@@ -43,7 +43,7 @@ import logging
 import traceback
 from . import hapi as HAPI
 from . import hdata as HDATA
-from .hgeo import HGeoMesh, HGeoCurve, HGeo, HGeoHeightfield, HGeoVolume
+from .hgeo import HGeoMesh, HGeoCurve, HGeo, HGeoHeightfield, HGeoVolume, HGeoInstancer
 
 class HNodeBase():
     """A base class for houdini engine's node, including shared operation\
@@ -148,25 +148,43 @@ class HNodeBase():
 
     def __get_display_geo_by_node(self, node_id):
         all_geos = []
+        id2geo = {}
+        instancers = []
         geo_info = HAPI.get_display_geo_info(self.session.hapi_session, node_id)
-        for part_id in range(0, geo_info.partCount):
-            part_info = HAPI.get_part_info(self.session.hapi_session, geo_info.nodeId, part_id)
+        for idx in range(0, geo_info.partCount):
+            part_info = HAPI.get_part_info(self.session.hapi_session, geo_info.nodeId, idx)
+            add_to_result = True
             if part_info.type == HDATA.PartType.MESH:
                 extract_geo = HGeoMesh()
             elif part_info.type == HDATA.PartType.CURVE:
                 extract_geo = HGeoCurve()
             elif part_info.type == HDATA.PartType.VOLUME:
                 volume_info = HAPI.get_volume_info(self.session.hapi_session, \
-                    geo_info.nodeId, part_id)
+                    geo_info.nodeId, part_info.id)
                 if volume_info.zLength == 1:
                     extract_geo = HGeoHeightfield()
                 else:
                     extract_geo = HGeoVolume()
+            elif part_info.type == HDATA.PartType.INSTANCER:
+                extract_geo = HGeoInstancer()
+                instancers.append(extract_geo)
             else:
                 logging.critical("Type of geo extraction not implemented {0}".format(part_info.type))
                 extract_geo = HGeo()
-            extract_geo.extract_from_sop(self.session, part_info, geo_info.nodeId, part_id)
-            all_geos.append(extract_geo)
+            
+            extract_geo.extract_from_sop(self.session, part_info, geo_info.nodeId, part_info.id)
+            id2geo[part_info.id] = extract_geo
+
+            if add_to_result:
+                all_geos.append(extract_geo)
+
+        for instancer in instancers:
+            inst_ids = HAPI.get_instanced_part_ids(self.session.hapi_session, geo_info.nodeId, instancer.part_info.id)
+            xforms = HAPI.get_instancer_part_transforms(self.session.hapi_session, \
+                geo_info.nodeId, instancer.part_info.id, HDATA.RSTOrder.HAPI_RSTORDER_DEFAULT)
+            instancer.transforms = xforms
+            instancer.instanced_geos = [id2geo[id] for id in inst_ids]
+
         return all_geos
 
     def _collect_params(self):

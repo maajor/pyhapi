@@ -580,14 +580,14 @@ class Transform(StructureWithEnums): # pylint: disable=too-few-public-methods
         self.rotationQuaternion[0] = 0
         self.rotationQuaternion[1] = 0
         self.rotationQuaternion[2] = 0
-        self.rotationQuaternion[3] = 0
+        self.rotationQuaternion[3] = 1
         self.scale[0] = 1
         self.scale[1] = 1
         self.scale[2] = 1
         self.shear[0] = 0
         self.shear[1] = 0
         self.shear[2] = 0
-        self.rstorder = 5
+        self.rstorder = RSTOrder.HAPI_RSTORDER_DEFAULT
 
 class VolumeTileInfo(Structure): # pylint: disable=too-few-public-methods
     """Equivalent of HAPI's HAPI_VolumeTileInfo

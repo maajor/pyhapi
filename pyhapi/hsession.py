@@ -229,14 +229,15 @@ class HSessionManager():
         Returns:
             HSession: session created
         """
-        HSessionManager._rootpath = rootpath
+        if rootpath:
+            HSessionManager._rootpath = rootpath
         if HSessionManager._defaultSession is not None and\
             HSessionManager._defaultSession.is_session_valid():
             return HSessionManager._defaultSession
         if HSessionManager._defaultSession is None or\
             HSessionManager._defaultSession.ConnectedState ==\
                 HDATA.SessionConnectionState.NOT_CONNECTED:
-            if HSessionManager.__create_thrift_pipe_session(rootpath):
+            if HSessionManager.__create_thrift_pipe_session(HSessionManager._rootpath):
                 return HSessionManager._defaultSession
         HSessionManager._defaultSession = None
         return None

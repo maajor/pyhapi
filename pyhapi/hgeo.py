@@ -272,7 +272,11 @@ class HGeo():
                     self.attribs[(attrib_type, attrib_name)] = (
                         attrib_info, attrib_name, data)
 
-
+class HGeoInstancer(HGeo):
+    def __init__(self):
+        super(HGeoInstancer, self).__init__()
+        self.instanced_geos = []
+        self.transforms = []
 
 class HGeoMesh(HGeo):
 

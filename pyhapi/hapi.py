@@ -15,11 +15,8 @@ import numpy as np
 
 from . import hdata as HDATA
 
-SYS = platform.system()
-if SYS == "Windows":
-    HAPI_LIB = cdll.LoadLibrary("libHAPIL")
-elif SYS == "Linux":
-    HAPI_LIB = cdll.LoadLibrary("libHAPIL.so")
+
+HAPI_LIB = None
 
 def is_session_valid(session):
     """Wrapper for HAPI_IsSessionValid
@@ -685,6 +682,26 @@ def get_part_info(session, node_id, part_id=0):
     assert result == HDATA.Result.SUCCESS,\
         "GetPartInfo Failed with {0}".format(HDATA.Result(result).name)
     return part_info
+
+def get_instanced_part_ids(session, node_id, part_id):
+    part_info : HDATA.PartInfo = get_part_info(session, node_id, part_id)
+
+    id_buffer = (c_int32 * part_info.instancedPartCount)()
+    result = HAPI_LIB.HAPI_GetInstancedPartIds( \
+        byref(session), node_id, part_id, byref(id_buffer), 0, part_info.instancedPartCount)
+    assert result == HDATA.Result.SUCCESS,\
+        "GetInstancedPartIds Failed with {0}".format(HDATA.Result(result).name)
+    return id_buffer
+
+def get_instancer_part_transforms(session, node_id, part_id, rst_order):
+    part_info : HDATA.PartInfo = get_part_info(session, node_id, part_id)
+
+    xform_buffer = (HDATA.Transform * part_info.instanceCount)()
+    result = HAPI_LIB.HAPI_GetInstancerPartTransforms( \
+        byref(session), node_id, part_id, rst_order, byref(xform_buffer), 0, part_info.instanceCount)
+    assert result == HDATA.Result.SUCCESS,\
+        "GetInstancerPartTransforms Failed with {0}".format(HDATA.Result(result).name)
+    return xform_buffer
 
 def set_volume_info(session, node_id, part_id, volume_info):
     """Wrapper for HAPI_SetVolumeInfo
