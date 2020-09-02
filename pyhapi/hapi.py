@@ -64,7 +64,7 @@ def close_session(session):
         "Close Session Failed with {0}".format(HDATA.Result(result).name)
 
 
-def start_thrift_named_pipe_server(server_options):
+def start_thrift_named_pipe_server(server_options, pipe_name):
     """Wrapper for HAPI_StartThriftNamedPipeServer
 
     Starts a Thrift RPC server process on the local host serving clients \
@@ -80,7 +80,7 @@ def start_thrift_named_pipe_server(server_options):
     """
     processid = c_int32()
     result = HAPI_LIB.HAPI_StartThriftNamedPipeServer(
-        byref(server_options), c_char_p("hapi".encode('utf-8')), byref(processid))
+        byref(server_options), c_char_p(pipe_name.encode('utf-8')), byref(processid))
     assert result == HDATA.Result.SUCCESS,\
         "StartThriftNamedPipeServer Failed with {0}".format(
             HDATA.Result(result).name)
@@ -88,7 +88,7 @@ def start_thrift_named_pipe_server(server_options):
     return processid
 
 
-def create_thrift_named_pipe_session(session):
+def create_thrift_named_pipe_session(session, pipe_name):
     """Wrapper for HAPI_CreateThriftNamedPipeSession
     Creates a Thrift RPC session using a Windows named 、
     pipe or a Unix domain socket as transport.
@@ -97,7 +97,7 @@ def create_thrift_named_pipe_session(session):
         session (int64): session id
     """
     result = HAPI_LIB.HAPI_CreateThriftNamedPipeSession(
-        byref(session), c_char_p("hapi".encode('utf-8')))
+        byref(session), c_char_p(pipe_name.encode('utf-8')))
     assert result == HDATA.Result.SUCCESS,\
         "CreateThriftNamedPipeSession Failed with {0}".format(
             HDATA.Result(result).name)
@@ -844,6 +844,14 @@ def get_node_info(session, node_id):
         "GetNodeInfo Failed with {0}".format(HDATA.Result(result).name)
     return node_info
 
+def get_node_path(session, node_id, relative_to_node_id = -1):
+    pathsh = c_int32()
+    
+    result = HAPI_LIB.HAPI_GetNodePath(
+        byref(session), node_id, relative_to_node_id, byref(pathsh))
+    assert result == HDATA.Result.SUCCESS,\
+        "GetNodePath Failed with {0}".format(HDATA.Result(result).name)
+    return get_string(session, pathsh)
 
 def get_asset_info(session, node_id):
     """Wrapper for HAPI_GetAssetInfo
@@ -1020,6 +1028,21 @@ def set_parm_string_value(session, node_id, parmid, value, tupleid=0):
         "SetParamStringValue Failed with {0}".format(
             HDATA.Result(result).name)
 
+def set_parm_node_value(session, node_id, parmname, value):
+    """Wrapper for HAPI_SetParmIntValue
+    Set single parm int value by name.
+
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        parmname (str): The parm name.
+        value (int): The node id to set to parm
+    """
+    result = HAPI_LIB.HAPI_SetParmNodeValue(
+        byref(session), node_id, c_char_p(parmname.encode('utf-8')), value)
+    assert result == HDATA.Result.SUCCESS,\
+        "SetParamNodeValue Failed with {0}".format(
+            HDATA.Result(result).name)
 
 def set_part_info(session, node_id, part_info):
     """Wrapper for HAPI_SetPartInfo

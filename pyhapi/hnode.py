@@ -62,6 +62,7 @@ class HNodeBase():
         self.instantiated = False
         self.node_id = -1
         self.name = ""
+        self.path = ""
         self.node_info = HDATA.NodeInfo()
         self.param_info = []
         self.param_id_dict = {}
@@ -189,6 +190,10 @@ class HNodeBase():
 
     def _collect_params(self):
         self.node_info = HAPI.get_node_info(self.session.hapi_session, self.node_id)
+        # update name and path
+        self.name = HAPI.get_string(self.session.hapi_session, self.node_info.nameSH)
+        self.path = HAPI.get_node_path(self.session.hapi_session, self.node_id)
+        
         self.param_info = HAPI.get_parameters(\
             self.session.hapi_session, self.node_id, self.node_info)
         
@@ -282,10 +287,13 @@ class HNodeBase():
             if paraminfo.is_int():
                 HAPI.set_parm_int_value(self.session.hapi_session, \
                     self.node_id, param_name, value, tupleid)
-            if paraminfo.is_float():
+            elif paraminfo.is_float():
                 HAPI.set_parm_float_value(\
                     self.session.hapi_session, self.node_id, param_name, value, tupleid)
-            if paraminfo.is_string():
+            elif paraminfo.is_node() and isinstance(value, HNodeBase):
+                HAPI.set_parm_node_value(self.session.hapi_session, \
+                    self.node_id, param_name, value.node_id)
+            elif paraminfo.is_string():
                 HAPI.set_parm_string_value(self.session.hapi_session, \
                     self.node_id, paraminfo.id, value, tupleid)
             return True

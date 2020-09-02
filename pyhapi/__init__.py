@@ -49,7 +49,7 @@ def __ensure_hapi_path(libpath):
 
 __library_initialized__ = False
 
-def Initialize(lib_path = "", default_root_path = ""):
+def Initialize(lib_path = "", default_root_path = "", pipe_name="hapi"):
     if not __library_initialized__:
         assert __ensure_hapi_path(lib_path), "libHAPIL not found"
         
@@ -62,6 +62,9 @@ def Initialize(lib_path = "", default_root_path = ""):
             hapi.HAPI_LIB = cdll.LoadLibrary("libHAPIL.so")
 
         HSessionManager._rootpath = default_root_path
+        if not pipe_name.strip():
+            pipe_name="hapi"
+        HSessionManager._pipe_name = pipe_name
 
         __initialized__ = True
     else:
