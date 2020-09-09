@@ -1,4 +1,6 @@
 # pyhapi
+[![Downloads](https://pepy.tech/badge/pyhapi)](https://pepy.tech/project/pyhapi)
+
 Object-Oriented Python Wrapper for Houdini Engine's C API
 
 # Documentation  
