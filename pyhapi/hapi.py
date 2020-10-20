@@ -384,8 +384,9 @@ def cook_node(session, cook_option, node_id, status_report_interval=0.1, status_
         byref(session), node_id, byref(cook_option))
     assert result == HDATA.Result.SUCCESS,\
         "CookNode Failed with {0}".format(HDATA.Result(result).name)
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(wait_cook_async(session, status_report_interval, status_verbosity))
+    new_loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(new_loop)
+    new_loop.run_until_complete(wait_cook_async(session, status_report_interval, status_verbosity))
 
 
 async def cook_node_async(session, cook_option, node_id, status_report_interval=0.1, status_verbosity=HDATA.StatusVerbosity.ALL):
@@ -413,8 +414,9 @@ def wait_cook(session, status_report_interval=0.1, status_verbosity=HDATA.Status
         status_report_interval (int, optional): time interval in seconds to query cook status. \
             Defaults to 1.
     """
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(wait_cook_async(session, status_report_interval, status_verbosity))
+    new_loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(new_loop)
+    new_loop.run_until_complete(wait_cook_async(session, status_report_interval, status_verbosity))
 
 
 async def wait_cook_async(session, status_report_interval=0.1, status_verbosity=HDATA.StatusVerbosity.ALL):

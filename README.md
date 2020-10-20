@@ -10,8 +10,7 @@ Please visit [pyhapi documentation](https://pyhapi.readthedocs.io).
 # Install  
 ## 1. setup PATH  
 * For Windows  
-Add ```C:\Program Files\Side Effects Software\Houdini <version>\custom\houdini\dsolib``` to Environment Path  
-OR run ```powershell setpath.ps1```  
+PIP should automaticaly setup path, otherwise run ```powershell setpath.ps1```  
 * For Linux  
 Add ```/opt/hfs<version>/dsolib/``` to LD_LIBRARY_PATH  
 Example:  
