@@ -1,6 +1,18 @@
 Changelog
 ========================================
 
+0.0.2b2
+-----------------------
+
+* Support instancer geometry
+* Support choice parm of assets
+* Improve instantialize with message, pipename and root path
+
+0.0.2b1
+-----------------------
+
+* Make async cook use new event loop
+
 0.0.2b0
 -----------------------
 

@@ -3,6 +3,7 @@
 Author  : Maajor
 Email   : info@ma-yidong.com
 """
+import logging
 from .hdata import *
 from .hgeo import HGeo, HGeoMesh, HGeoCurve, HGeoHeightfield, HGeoInstancer
 from .hsession import HSession, HSessionManager
@@ -10,14 +11,12 @@ from .hnode import HNode, HInputNode, HHeightfieldInputNode, HHeightfieldInputVo
 from .hasset import HAsset
 from . import hapi as HAPI
 
-__version__ = "0.0.2b1"
+__version__ = "0.0.2b2"
 
 
 import platform
 import os
 from ctypes import cdll
-
-
 
 def __check_libpath(libpath):
     if not (os.path.exists(libpath) and os.path.isdir(libpath)):
@@ -46,28 +45,14 @@ def __ensure_hapi_path(libpath):
     else:
         return any([__check_libpath(p) for p in path_env])
             
+assert __ensure_hapi_path(""), "libHAPIL not found, Please refer to https://pyhapi.readthedocs.io/en/latest/install.html to setup Houdini Engine's PATH"
 
-__library_initialized__ = False
+from . import hapi
 
-def Initialize(lib_path = "", default_root_path = "", pipe_name="hapi"):
-    if not __library_initialized__:
-        assert __ensure_hapi_path(lib_path), "libHAPIL not found"
-        
-        from . import hapi
+SYS = platform.system()
+if SYS == "Windows":
+    hapi.HAPI_LIB = cdll.LoadLibrary("libHAPIL")
+elif SYS == "Linux":
+    hapi.HAPI_LIB = cdll.LoadLibrary("libHAPIL.so")
 
-        SYS = platform.system()
-        if SYS == "Windows":
-            hapi.HAPI_LIB = cdll.LoadLibrary("libHAPIL")
-        elif SYS == "Linux":
-            hapi.HAPI_LIB = cdll.LoadLibrary("libHAPIL.so")
-
-        HSessionManager._rootpath = default_root_path
-        if not pipe_name.strip():
-            pipe_name="hapi"
-        HSessionManager._pipe_name = pipe_name
-
-        __initialized__ = True
-    else:
-        print("HAPI is already initialized.")
-    
-    return True
+print("HAPI Found")

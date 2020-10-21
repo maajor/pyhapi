@@ -10,7 +10,7 @@ import platform
 
 from setuptools import setup
 from setuptools import find_packages
-from setuptools.command.install import install
+from distutils.command.install_scripts import install_scripts
 import subprocess
 
 with io.open("README.md", "rt", encoding="utf8") as f:
@@ -19,10 +19,10 @@ with io.open("README.md", "rt", encoding="utf8") as f:
 with io.open("pyhapi/__init__.py", "rt", encoding="utf8") as f:
     VERSION = re.search(r'__version__ = "(.*?)"', f.read()).group(1)
 
-class PostInstallCommand(install):
+class PostInstallCommand(install_scripts):
     """Post-installation for installation mode."""
     def run(self):
-        install.run(self)
+        install_scripts.run(self)
         SYS = platform.system()
         if SYS == "Windows":
             set_path_cmd = "Powershell -Command \"start-process powershell \'-ExecutionPolicy Bypass -File {0}\sethoupath.ps1\' -Verb RunAs\"".format(os.getcwd())
@@ -64,8 +64,7 @@ setup(
     install_requires=['numpy>=1.15.0'],
     tests_require=['pytest', 'pytest-asyncio'],
     long_description_content_type="text/markdown",
-    data_files=[('.',['sethoupath.ps1'])],
     cmdclass={
-        'install': PostInstallCommand
+        'install_scripts': PostInstallCommand
     },
 )

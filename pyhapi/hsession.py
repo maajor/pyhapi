@@ -26,6 +26,7 @@ box = ph.HNode(session, "geo", "ProgrammaticBox")
 session.save_hip("test.hip")
 
 """
+import os
 import logging
 from . import hdata as HDATA
 from . import hapi as HAPI
@@ -217,11 +218,11 @@ class HSessionManager():
     """
 
     _defaultSession = None
-    _rootpath = ""
+    _rootpath = os.getcwd()
     _pipe_name = "hapi"
 
     @staticmethod
-    def get_or_create_default_session(rootpath="", pipe_name = ""):
+    def get_or_create_default_session(rootpath=os.getcwd(), pipe_name = "hapi"):
         """Get or create an session
 
         Args:

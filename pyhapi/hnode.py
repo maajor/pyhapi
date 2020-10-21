@@ -242,6 +242,14 @@ class HNodeBase():
         return type(None)
 
     def get_param_choice_list(self, param_name):
+        """Get param choice list
+
+        Args:
+            param_name (str): Parameter name to retrieve
+
+        Returns:
+            [int]: param choice
+        """
         param_idx = self.param_id_dict[param_name]
         param_id = self.param_info[param_idx].id
         return self.param_choice_lists[param_id]

@@ -8,8 +8,10 @@ You can start houdini engine with code, and instantiate your houdini digital ass
 
 .. code-block:: python
 
+    import logging
     import pyhapi as ph
-   
+
+    logging.basicConfig(level=logging.INFO)
     session = ph.HSessionManager.get_or_create_default_session()
 
     #load hda asset and instantiate
@@ -23,8 +25,10 @@ You can instantiate any operator in houdini engine's session, connect and discon
 
 .. code-block:: python
 
+    import logging
     import pyhapi as ph
 
+    logging.basicConfig(level=logging.INFO)
     session = ph.HSessionManager.get_or_create_default_session()
 
     #load hda asset and instantiate
@@ -51,8 +55,10 @@ You can get and set all paramters on an node's interface, even press a button
 
 .. code-block:: python
 
+    import logging
     import pyhapi as ph
 
+    logging.basicConfig(level=logging.INFO)
     session = ph.HSessionManager.get_or_create_default_session()
 
     #load hda asset and instantiate
@@ -78,8 +84,10 @@ You can save current session to hip file for debug, as well as load an hip file 
 
 .. code-block:: python
 
+    import logging
     import pyhapi as ph
 
+    logging.basicConfig(level=logging.INFO)
     session = ph.HSessionManager.get_or_create_default_session()
     session.save_hip("debug.hip")
     session.load_hip("debug.hip")
@@ -98,9 +106,11 @@ Vertices should be in shape (num_vertices, 3)
 
 .. code-block:: python
 
+    import logging
     import numpy as np
     import pyhapi as ph
-    
+
+    logging.basicConfig(level=logging.INFO)
     session = ph.HSessionManager.get_or_create_default_session()
 
     #create an inputnode where you can set geometry
@@ -126,8 +136,10 @@ Marshall Curve Out
 
 .. code-block:: python
 
+    import logging
     import pyhapi as ph
 
+    logging.basicConfig(level=logging.INFO)
     session = ph.HSessionManager.get_or_create_default_session()
 
     #load hda asset and instantiate
@@ -149,9 +161,11 @@ Faces should be in shape (num_faces, num_vertices_per_face)
 
 .. code-block:: python
 
+    import logging
     import numpy as np
     import pyhapi as ph
 
+    logging.basicConfig(level=logging.INFO)
     session = ph.HSessionManager.get_or_create_default_session()
 
     #create an inputnode where you can set geometry
@@ -187,8 +201,10 @@ Marshall Mesh Out
 
 .. code-block:: python
 
+    import logging
     import pyhapi as ph
 
+    logging.basicConfig(level=logging.INFO)
     session = ph.HSessionManager.get_or_create_default_session()
 
     # load hda asset and instantiate
@@ -206,9 +222,11 @@ Marshall Heightfield In
 
 .. code-block:: python
 
-    import pyhapi as ph
+    import logging
     import numpy as np
+    import pyhapi as ph
 
+    logging.basicConfig(level=logging.INFO)
     session = ph.HSessionManager.get_or_create_default_session()
 
     #create a heightfield input node, used to marshal in height and mask
@@ -247,8 +265,10 @@ Marshall Heightfield Out
 
 .. code-block:: python
 
+    import logging
     import pyhapi as ph
 
+    logging.basicConfig(level=logging.INFO)
     session = ph.HSessionManager.get_or_create_default_session()
 
     #load hda asset and instantiate
