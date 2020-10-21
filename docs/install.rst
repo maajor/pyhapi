@@ -36,7 +36,12 @@ Example:
 
 Windows
 ----------------------
-Add *C:/Program Files/Side Effects Software/Houdini <version>/custom/houdini/dsolib* to Environment Path  
+
+You could run batch file https://github.com/maajor/pyhapi/blob/master/sethoupath.ps1 
+
+or  
+
+Add *C:/Program Files/Side Effects Software/Houdini <version>/custom/houdini/dsolib* and *C:/Program Files/Side Effects Software/Houdini <version>/bin*  to Environment Path  
 
 .. _Python: https://www.python.org/
 .. _pip: https://pip.pypa.io/

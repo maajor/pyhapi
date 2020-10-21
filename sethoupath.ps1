@@ -1,3 +1,7 @@
+# elevate to admin
+if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) { Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs; exit }
+
+
 # find houdini path
 $hou_paths = Get-Childitem -Path 'C:\Program Files\Side Effects Software\'
 $hou_dir = 'C:\Program Files\Side Effects Software\'+$hou_paths[0].name

@@ -7,17 +7,25 @@ Object-Oriented Python Wrapper for Houdini Engine's C API
 
 Please visit [pyhapi documentation](https://pyhapi.readthedocs.io).  
 
+
 # Install  
-## 1. setup PATH  
-* For Windows  
-PIP should automaticaly setup path, otherwise run ```powershell setpath.ps1```  
+
+You could use either (a) pip or (b) clone and install.  
+
+## option a.1 setup PATH  
+* For Windows, run  
+```powershell ./sethoupath.ps1```  
+it should add houdini's dsolib and bin directory to PATH.  
 * For Linux  
 Add ```/opt/hfs<version>/dsolib/``` to LD_LIBRARY_PATH  
 Example:  
 ```export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/opt/hfs17.5/dsolib/```  
 
-## 2. install through PyPI  
+## option a.2 install through PyPI  
 ```$ pip install pyhapi```
+
+## option b
+Clone this repo and run ```python setup.py install```  
 
 # Supported Platforms  
 * Windows  
@@ -43,6 +51,7 @@ Example:
 * Node async cooking   
 * Marshall in/out curve  
 * Marshall in/out mesh  
+* Marshall in/out heightfield  
   
 Following feature in Houdini Engine is NOT supported yet:  
 * Marshall in/out volume  

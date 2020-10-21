@@ -15,11 +15,8 @@ import numpy as np
 
 from . import hdata as HDATA
 
-SYS = platform.system()
-if SYS == "Windows":
-    HAPI_LIB = cdll.LoadLibrary("libHAPIL")
-elif SYS == "Linux":
-    HAPI_LIB = cdll.LoadLibrary("libHAPIL.so")
+
+HAPI_LIB = None
 
 def is_session_valid(session):
     """Wrapper for HAPI_IsSessionValid
@@ -67,7 +64,7 @@ def close_session(session):
         "Close Session Failed with {0}".format(HDATA.Result(result).name)
 
 
-def start_thrift_named_pipe_server(server_options):
+def start_thrift_named_pipe_server(server_options, pipe_name):
     """Wrapper for HAPI_StartThriftNamedPipeServer
 
     Starts a Thrift RPC server process on the local host serving clients \
@@ -83,7 +80,7 @@ def start_thrift_named_pipe_server(server_options):
     """
     processid = c_int32()
     result = HAPI_LIB.HAPI_StartThriftNamedPipeServer(
-        byref(server_options), c_char_p("hapi".encode('utf-8')), byref(processid))
+        byref(server_options), c_char_p(pipe_name.encode('utf-8')), byref(processid))
     assert result == HDATA.Result.SUCCESS,\
         "StartThriftNamedPipeServer Failed with {0}".format(
             HDATA.Result(result).name)
@@ -91,7 +88,7 @@ def start_thrift_named_pipe_server(server_options):
     return processid
 
 
-def create_thrift_named_pipe_session(session):
+def create_thrift_named_pipe_session(session, pipe_name):
     """Wrapper for HAPI_CreateThriftNamedPipeSession
     Creates a Thrift RPC session using a Windows named 、
     pipe or a Unix domain socket as transport.
@@ -100,7 +97,7 @@ def create_thrift_named_pipe_session(session):
         session (int64): session id
     """
     result = HAPI_LIB.HAPI_CreateThriftNamedPipeSession(
-        byref(session), c_char_p("hapi".encode('utf-8')))
+        byref(session), c_char_p(pipe_name.encode('utf-8')))
     assert result == HDATA.Result.SUCCESS,\
         "CreateThriftNamedPipeSession Failed with {0}".format(
             HDATA.Result(result).name)
@@ -200,8 +197,135 @@ def load_asset_library_from_file(session, file_path, allow_overwrite=True):
             HDATA.Result(result).name)
     return asset_lib_id
 
+def get_asset_definition_parm_counts(session, library_id, asset_name):
+    """Wrapper for HAPI_GetAssetDefinitionParmCounts
 
-def _get_available_asset_count(session, asset_lib_id):
+    Get the number of asset parameters contained in an asset library, \
+        as well as the number of parameter int, float, string, and choice values.
+
+    Args:
+        session (int64): The session of Houdini you are interacting with.
+        file_path (int): Library ID of asset
+        asset_name (str): Name of the asset to get the parm counts for.
+
+    Returns:
+        parm_count (int) : The number of parameters in the asset library.
+    	int_value_count (int) : The number of int values for parameters in the asset library.
+    	float_value_count (int) : The number of float values for parameters in the asset library.
+    	string_value_count (int) : The number of string values for parameters in the asset library.
+    	choice_value_count (int) : The number of choice values for parameters in the asset library.
+    """
+    parm_count = c_int32()
+    int_value_count = c_int32()
+    float_value_count = c_int32()
+    string_value_count = c_int32()
+    choice_value_count = c_int32()
+
+    result = HAPI_LIB.HAPI_GetAssetDefinitionParmCounts(
+        byref(session), 
+        library_id,
+        c_char_p(asset_name.encode("utf-8")),
+        byref(parm_count), byref(int_value_count), byref(float_value_count), byref(string_value_count), byref(choice_value_count))
+    assert result == HDATA.Result.SUCCESS,\
+        "GetAssetDefinitionParmCounts Failed with {0}".format(
+            HDATA.Result(result).name)
+
+    return parm_count,int_value_count,float_value_count,string_value_count,choice_value_count
+
+def get_asset_definition_parm_infos(session, library_id, asset_name):
+    """Wrapper for HAPI_GetAssetDefinitionParmInfos
+
+    Fill an array of HAPI_ParmInfo structs with parameter information \
+        for the specified asset in the specified asset library.
+
+    Args:
+        session (int64): The session of Houdini you are interacting with.
+        file_path (int): Library ID of asset
+        asset_name (str): Name of the asset to get the parm counts for.
+
+    Returns:
+        list(ParmInfo) : Array of HAPI_ParmInfo at least the size of length.
+    """
+    parm_count,_,_,_,_ = get_asset_definition_parm_counts(session, library_id, asset_name)
+
+    parm_info_buf = (HDATA.ParmInfo * parm_count.value)()
+    
+    result = HAPI_LIB.HAPI_GetAssetDefinitionParmInfos(
+        byref(session),
+        library_id,        
+        c_char_p(asset_name.encode("utf-8")),
+        byref(parm_info_buf),
+        0, parm_count.value)
+
+    assert result == HDATA.Result.SUCCESS,\
+        "GetAssetDefinitionParmInfos Failed with {0}".format(
+            HDATA.Result(result).name)
+
+    return parm_info_buf
+
+def get_asset_definition_parm_values(session, library_id, asset_name, string_evaluate = False):
+    """Wrapper for HAPI_GetAssetDefinitionParmValues
+
+    Fill arrays of parameter int values, float values, string values, \
+        and choice values for parameters in the specified asset in the specified asset library.
+
+    Args:
+        session (int64): The session of Houdini you are interacting with.
+        file_path (int): Library ID of asset
+        asset_name (str): Name of the asset to get the parm counts for.
+        string_evaluate(str): Whether or not to evaluate the string expressions. 
+
+    Returns:
+    """
+    pc,ic,fc,sc,cc = get_asset_definition_parm_counts(session, library_id, asset_name)
+
+    parm_info_buf = (HDATA.ParmInfo * pc.value)()
+    
+    result = HAPI_LIB.HAPI_GetAssetDefinitionParmInfos(
+        byref(session),
+        library_id,        
+        c_char_p(asset_name.encode("utf-8")),
+        byref(parm_info_buf),
+        0, pc.value)
+
+    assert result == HDATA.Result.SUCCESS,\
+        "get_asset_definition_parm_values Failed with {0}".format(
+            HDATA.Result(result).name)
+
+    int_buf = (c_int32 * ic.value)()
+    float_buf = (c_float * fc.value)()
+    sh_buf = (c_int32 * sc.value)()
+    choice_buf = (HDATA.ParmChoiceInfo * cc.value)()
+
+    print(library_id, asset_name)
+    print("get values\n\n")
+
+    result = HAPI_LIB.HAPI_GetAssetDefinitionParmValues(
+        byref(session), library_id, c_char_p(asset_name.encode("utf-8")),
+        byref(int_buf), 0, ic, 
+        byref(float_buf), 0, fc,
+        c_bool(string_evaluate),
+        byref(sh_buf), 0, sc,
+        byref(choice_buf), 0, cc)
+    # TODO: get this working    
+    assert result == HDATA.Result.SUCCESS,\
+        "HAPI_GetAssetDefinitionParmValues Failed with {0}".format(
+            HDATA.Result(result).name)
+
+
+def get_available_asset_count(session, asset_lib_id):
+    """Wrapper for HAPI_GetAvailableAssetCount
+
+    Get the number of assets contained in an asset library. \
+        You should call HAPI_LoadAssetLibraryFromFile() prior to get a library_id.
+
+    Args:
+        session (int64): The session of Houdini you are interacting with.
+        asset_lib_id (int): Library ID of asset
+
+    Returns:
+        int : asset_count 
+    """
     asset_count = c_int32()
     result = HAPI_LIB.HAPI_GetAvailableAssetCount(
         byref(session), asset_lib_id, byref(asset_count))
@@ -226,7 +350,7 @@ def get_available_assets(session, asset_lib_id):
     Returns:
         list(str): names of available assets name
     """
-    asset_count = _get_available_asset_count(session, asset_lib_id)
+    asset_count = get_available_asset_count(session, asset_lib_id)
 
     asset_string_buffer = (c_int32 * asset_count.value)()
 
@@ -615,6 +739,26 @@ def get_part_info(session, node_id, part_id=0):
         "GetPartInfo Failed with {0}".format(HDATA.Result(result).name)
     return part_info
 
+def get_instanced_part_ids(session, node_id, part_id):
+    part_info : HDATA.PartInfo = get_part_info(session, node_id, part_id)
+
+    id_buffer = (c_int32 * part_info.instancedPartCount)()
+    result = HAPI_LIB.HAPI_GetInstancedPartIds( \
+        byref(session), node_id, part_id, byref(id_buffer), 0, part_info.instancedPartCount)
+    assert result == HDATA.Result.SUCCESS,\
+        "GetInstancedPartIds Failed with {0}".format(HDATA.Result(result).name)
+    return id_buffer
+
+def get_instancer_part_transforms(session, node_id, part_id, rst_order):
+    part_info : HDATA.PartInfo = get_part_info(session, node_id, part_id)
+
+    xform_buffer = (HDATA.Transform * part_info.instanceCount)()
+    result = HAPI_LIB.HAPI_GetInstancerPartTransforms( \
+        byref(session), node_id, part_id, rst_order, byref(xform_buffer), 0, part_info.instanceCount)
+    assert result == HDATA.Result.SUCCESS,\
+        "GetInstancerPartTransforms Failed with {0}".format(HDATA.Result(result).name)
+    return xform_buffer
+
 def set_volume_info(session, node_id, part_id, volume_info):
     """Wrapper for HAPI_SetVolumeInfo
     Set the volume info of a geo on a geo input.
@@ -730,6 +874,23 @@ def compose_object_list(session, node_id):
             HDATA.Result(result).name)
     return child_count.value
 
+def get_manager_node_id(session, node_type):
+    """Wrapper for HAPI_GetManagerNodeId
+    Get the root node of a particular network type (ie. OBJ).
+
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_type (NodeType): The node type
+
+    Returns:
+        int: id of root node
+    """
+    root_id = c_int32()
+    result = HAPI_LIB.HAPI_GetManagerNodeId(byref(session), node_type, byref(root_id))
+    assert result == HDATA.Result.SUCCESS,\
+        "GetManagerNodeId Failed with {0}".format(
+            HDATA.Result(result).name)
+    return root_id.value
 
 def get_node_info(session, node_id):
     """Wrapper for HAPI_GetNodeInfo
@@ -749,6 +910,25 @@ def get_node_info(session, node_id):
         "GetNodeInfo Failed with {0}".format(HDATA.Result(result).name)
     return node_info
 
+def get_node_path(session, node_id, relative_to_node_id = -1):
+    """Wrapper for HAPI_GetNodePath
+
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        relative_to_node_id (int): Set this to -1 to get the absolute path \
+            of the node_id. Otherwise, the path will be relative to this node id.
+
+    Returns:
+        str: The returned path string, valid until the next call to this function.
+    """
+    pathsh = c_int32()
+    
+    result = HAPI_LIB.HAPI_GetNodePath(
+        byref(session), node_id, relative_to_node_id, byref(pathsh))
+    assert result == HDATA.Result.SUCCESS,\
+        "GetNodePath Failed with {0}".format(HDATA.Result(result).name)
+    return get_string(session, pathsh)
 
 def get_asset_info(session, node_id):
     """Wrapper for HAPI_GetAssetInfo
@@ -768,6 +948,22 @@ def get_asset_info(session, node_id):
         "GetAssetInfo Failed with {0}".format(HDATA.Result(result).name)
     return asset_info
 
+def get_node_input_name(session, node_id, input_idx : int):
+    """Wrapper for HAPI_GetNodeInputName
+
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        input_idx (int): The input index.
+
+    Returns:
+        str: Input name string handle return value - valid until the next call to this function.
+    """
+    namesh = c_int32()
+    result = HAPI_LIB.HAPI_GetNodeInputName(byref(session), c_int(node_id), input_idx, byref(namesh))
+    assert result == HDATA.Result.SUCCESS,\
+        "GetAssetInfo Failed with {0}".format(HDATA.Result(result).name)
+    return get_string(session, namesh)
 
 def get_parameters(session, node_id, node_info):
     """Wrapper for HAPI_GetParameters
@@ -790,6 +986,25 @@ def get_parameters(session, node_id, node_info):
         "GetParameters Failed with {0}".format(HDATA.Result(result).name)
     return params
 
+def get_parm_choice_lists(session, node_id):
+    """Wrapper for HAPI_GetParmChoiceLists
+    Fill an array of HAPI_ParmChoiceInfo structs with parameter choice list information from the asset instance node.
+
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+
+    Returns:
+        Array of HAPI_ParmChoiceInfo: Array of parmchoiceinfo of querying node
+    """
+    node_info : HDATA.NodeInfo = get_node_info(session, node_id)    
+
+    parm_choices_array = (HDATA.ParmChoiceInfo * node_info.parmChoiceCount)()
+    if node_info.parmChoiceCount != 0:        
+        result = HAPI_LIB.HAPI_GetParmChoiceLists(byref(session), c_int(node_id), byref(parm_choices_array), 0, node_info.parmChoiceCount)
+        assert result == HDATA.Result.SUCCESS,\
+            "GetParmChoiceLists Failed with {0}".format(HDATA.Result(result).name)
+    return parm_choices_array
 
 def get_parm_int_value(session, node_id, parmname, tupleid=0):
     """Wrapper for HAPI_GetParmIntValue
@@ -910,6 +1125,21 @@ def set_parm_string_value(session, node_id, parmid, value, tupleid=0):
         "SetParamStringValue Failed with {0}".format(
             HDATA.Result(result).name)
 
+def set_parm_node_value(session, node_id, parmname, value):
+    """Wrapper for HAPI_SetParmIntValue
+    Set single parm int value by name.
+
+    Args:
+        session (int): The session of Houdini you are interacting with.
+        node_id (int): The node to get.
+        parmname (str): The parm name.
+        value (int): The node id to set to parm
+    """
+    result = HAPI_LIB.HAPI_SetParmNodeValue(
+        byref(session), node_id, c_char_p(parmname.encode('utf-8')), value)
+    assert result == HDATA.Result.SUCCESS,\
+        "SetParamNodeValue Failed with {0}".format(
+            HDATA.Result(result).name)
 
 def set_part_info(session, node_id, part_info):
     """Wrapper for HAPI_SetPartInfo

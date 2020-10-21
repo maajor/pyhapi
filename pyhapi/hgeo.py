@@ -50,6 +50,9 @@ geo_inputnode.set_geometry(cube_geo)
 """
 import numpy as np
 import logging
+import functools
+import operator
+from ctypes import c_float
 
 from . import hdata as HDATA
 from . import hapi as HAPI
@@ -215,6 +218,36 @@ class HGeo():
             return data
         return None
 
+    def get_attrib_tuple_size(self, attrib_type, name):
+        """Get attribute data of certain type and name
+
+        Args:
+            attrib_type (AttributeOwner): Type of querying attribute
+            name (str): Name of querying attribute
+
+        Returns:
+            ndarray(,): Data of querying attribute
+        """
+        if (attrib_type, name) in self.attribs:
+            attrib_info, _, data = self.attribs[(attrib_type, name)]
+            return attrib_info.tupleSize
+        return None
+
+    def get_attrib_data_storage_type(self, attrib_type, name):
+        """Get attribute data of certain type and name
+
+        Args:
+            attrib_type (AttributeOwner): Type of querying attribute
+            name (str): Name of querying attribute
+
+        Returns:
+            ndarray(,): Data of querying attribute
+        """
+        if (attrib_type, name) in self.attribs:
+            attrib_info, _, data = self.attribs[(attrib_type, name)]
+            return attrib_info.storage
+        return None
+
     def get_attrib_names(self):
         """Get all attribute name in this geo
 
@@ -272,7 +305,11 @@ class HGeo():
                     self.attribs[(attrib_type, attrib_name)] = (
                         attrib_info, attrib_name, data)
 
-
+class HGeoInstancer(HGeo):
+    def __init__(self):
+        super(HGeoInstancer, self).__init__()
+        self.instanced_geos = []
+        self.transforms = []
 
 class HGeoMesh(HGeo):
 
@@ -293,18 +330,26 @@ class HGeoMesh(HGeo):
                 (face_count, vertex_each_face). Defaults to None.
         """
         super(HGeoMesh, self).__init__()
-        if isinstance(vertices, np.ndarray) and isinstance(faces, np.ndarray):
+        if isinstance(vertices, np.ndarray):
             self.point_count = vertices.shape[0]
-            self.vertex_count = faces.flatten().shape[0]
-            self.face_count = faces.shape[0]
-            self.faces = faces
 
-            self.part_info.type = HDATA.PartType.MESH
-            self.part_info.faceCount = self.face_count
+            if isinstance(faces, np.ndarray):            
+                self.face_count = faces.shape[0]                
+                self.faces = faces
+                self.vertex_count = faces.flatten().shape[0]     
+            elif type(faces) is list:
+                self.face_count = len(faces)
+                self.faces = faces
+                self.vertices = np.array(functools.reduce(operator.concat, faces), dtype=np.int32)
+                self.vertex_count = self.vertices.shape[0]
+                self.face_counts = np.array([len(face) for face in self.faces], dtype=np.int32)
+
             self.part_info.vertexCount = self.vertex_count
             self.part_info.pointCount = self.point_count
-
+            self.part_info.faceCount = self.face_count
+            self.part_info.type = HDATA.PartType.MESH
             self.add_attrib(HDATA.AttributeOwner.POINT, "P", vertices)
+
 
     def extract_from_sop(self, session, part_info, node_id, part_id=0):
         """Extract mesh from sop
@@ -328,9 +373,13 @@ class HGeoMesh(HGeo):
         """
         super().commit_to_node(session, node_id)
 
-        HAPI.set_vertex_list(session.hapi_session, node_id, self.faces)
-        HAPI.set_face_counts(session.hapi_session, node_id, \
-            np.array([len(face) for face in self.faces]))
+        if type(self.faces) is list:
+            HAPI.set_vertex_list(session.hapi_session, node_id, self.vertices)
+            HAPI.set_face_counts(session.hapi_session, node_id, self.face_counts)
+        else:
+            HAPI.set_vertex_list(session.hapi_session, node_id, self.faces)
+            HAPI.set_face_counts(session.hapi_session, node_id, \
+                np.array([len(face) for face in self.faces]))
         HAPI.commit_geo(session.hapi_session, node_id)
 
 

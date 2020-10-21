@@ -580,14 +580,14 @@ class Transform(StructureWithEnums): # pylint: disable=too-few-public-methods
         self.rotationQuaternion[0] = 0
         self.rotationQuaternion[1] = 0
         self.rotationQuaternion[2] = 0
-        self.rotationQuaternion[3] = 0
+        self.rotationQuaternion[3] = 1
         self.scale[0] = 1
         self.scale[1] = 1
         self.scale[2] = 1
         self.shear[0] = 0
         self.shear[1] = 0
         self.shear[2] = 0
-        self.rstorder = 5
+        self.rstorder = RSTOrder.HAPI_RSTORDER_DEFAULT
 
 class VolumeTileInfo(Structure): # pylint: disable=too-few-public-methods
     """Equivalent of HAPI's HAPI_VolumeTileInfo
@@ -719,7 +719,7 @@ class GeoInfo(StructureWithEnums): # pylint: disable=too-few-public-methods
     }
 
 
-class CookOptions(Structure): # pylint: disable=too-few-public-methods
+class CookOptions(StructureWithEnums): # pylint: disable=too-few-public-methods
     """Equivalent of HAPI's HAPI_CookOptions
     """
     _fields_ = [('splitGeosByGroup', c_bool),
@@ -731,11 +731,14 @@ class CookOptions(Structure): # pylint: disable=too-few-public-methods
                 ('clearErrorsAndWarnings', c_bool),
                 ('cookTemplatedGeos', c_bool),
                 ('splitPointsByVertexAttributes', c_bool),
+                ('packedPrimInstancingMode', c_int32),
                 ('handleBoxPartTypes', c_bool),
                 ('handleSpherePartTypes', c_bool),
                 ('checkPartChanges', c_bool),
                 ('extraFlags', c_int32)]
-
+    _map = {
+        'packedPrimInstancingMode' : PackedPrimInstancingMode
+    }
 
 class NodeInfo(StructureWithEnums): # pylint: disable=too-few-public-methods
     """Equivalent of HAPI's HAPI_NodeInfo
@@ -771,6 +774,7 @@ class ParmInfo(StructureWithEnums):
                 ('childIndex', c_int32),
                 ('type', c_int),
                 ('scriptType', c_int),
+                ('typeInfoSH', c_int32),
                 ('permissions', c_int32),
                 ('tagCount', c_int32),
                 ('size', c_int32),
@@ -797,7 +801,6 @@ class ParmInfo(StructureWithEnums):
                 ('floatValuesIndex', c_int32),
                 ('stringValuesIndex', c_int32),
                 ('choiceIndex', c_int32),
-                ('labelNone', c_bool),
                 ('inputNodeType', c_int32),
                 ('inputNodeFlag', c_int32),
                 ('isChildOfMultiParm', c_bool),
@@ -817,6 +820,7 @@ class ParmInfo(StructureWithEnums):
         "inputNodeFlag": NodeFlags,
         "rampType": RampType
     }
+
 
     def is_int(self):
         """If this attribute is int type
@@ -876,3 +880,15 @@ class ParmInfo(StructureWithEnums):
         """
         return self.type >= ParmType.NONVALUE_START and\
             self.type <= ParmType.NONVALUE_END
+
+
+
+class ParmChoiceInfo(StructureWithEnums):
+    """Equivalent of HAPI's HAPI_ParmChoiceInfo
+    """
+    _fields_ = [
+        ('parentParmId', c_int32),
+        ('labelSH', c_int32),
+        ('valueSH', c_int32)]
+
+
