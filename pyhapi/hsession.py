@@ -28,6 +28,7 @@ session.save_hip("test.hip")
 """
 import os
 import logging
+import pyhapi
 from . import hdata as HDATA
 from . import hapi as HAPI
 from .hnode import HExistingNode
@@ -232,6 +233,8 @@ class HSessionManager():
         Returns:
             HSession: session created
         """
+        # check if can find libHAPIL otherwise return
+        assert pyhapi.__library_initialized__,  "libHAPIL not found, Please refer to https://pyhapi.readthedocs.io/en/latest/install.html to setup Houdini Engine's PATH"
         if rootpath:
             HSessionManager._rootpath = rootpath
         if pipe_name:
