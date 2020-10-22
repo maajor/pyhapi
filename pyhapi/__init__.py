@@ -6,7 +6,7 @@ Email   : info@ma-yidong.com
 import logging
 from .hdata import *
 from .hgeo import HGeo, HGeoMesh, HGeoCurve, HGeoHeightfield, HGeoInstancer
-from .hsession import HSession, HSessionManager
+from .hsession import HSession, HSessionManager, HSessionPool, HSessionTask
 from .hnode import HNode, HInputNode, HHeightfieldInputNode, HHeightfieldInputVolumeNode
 from .hasset import HAsset
 from . import hapi as HAPI

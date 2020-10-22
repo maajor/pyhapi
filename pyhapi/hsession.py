@@ -28,6 +28,10 @@ session.save_hip("test.hip")
 """
 import os
 import logging
+import asyncio
+import threading
+import enum
+import time
 import pyhapi
 from . import hdata as HDATA
 from . import hapi as HAPI
@@ -36,7 +40,7 @@ from .hnode import HExistingNode
 
 __all__ = [
     # Classes
-    'HSession', 'HSessionManager'
+    'HSession', 'HSessionManager', 'HSessionPool', 'HSessionTask'
 ]
 
 
@@ -65,6 +69,7 @@ class HSession():
         self.cook_option = HAPI.get_cook_options()
         self.root_path = ""
         self.pipe_name = "hapi"
+        self.session_status = HDATA.HSessionStatus.INVALID
 
         self.asset_libs = {}
 
@@ -117,6 +122,8 @@ class HSession():
         Returns:
             bool: true if the session created successfully, false not.
         """
+        self.root_path = rootpath
+        self.pipe_name = pipe_name
         return self.__internal_create_thrift_pipe_session(rootpath, pipe_name, True, auto_close, timeout)
 
     def __internal_create_thrift_pipe_session(\
@@ -145,6 +152,7 @@ class HSession():
             otl_search_path="{0}\\hda\\".format(rootpath))
         self.root_path = rootpath
         self.connected_state = HDATA.SessionConnectionState.CONNECTED
+        self.session_status = HDATA.HSessionStatus.FREE
 
     def cleanup(self):
         """Clean up current session
@@ -219,6 +227,7 @@ class HSessionManager():
     """
 
     _defaultSession = None
+    _defaultSessionPool = None
     _rootpath = os.getcwd()
     _pipe_name = "hapi"
 
@@ -277,3 +286,140 @@ class HSessionManager():
         if session.create_thrift_pipe_session(HSessionManager._rootpath, HSessionManager._pipe_name, True):
             HSessionManager._defaultSession = session
         return None
+
+    @staticmethod
+    def get_or_create_session_pool(session_count=10, rootpath=os.getcwd(), pipe_name = "hapi"):
+        """Restart default session
+
+        Returns:
+            HSession: session created
+        """
+        if HSessionManager._defaultSessionPool is not None:
+            if session_count == HSessionManager._defaultSessionPool.session_count:
+                return HSessionManager._defaultSessionPool.restart_session_pool()
+            else:
+                return HSessionManager._defaultSessionPool.resize(session_count)
+        if rootpath:
+            HSessionManager._rootpath = rootpath
+        if pipe_name:
+            HSessionManager._pipe_name = pipe_name
+        session_pool = HSessionPool(session_count)
+        if session_pool.create_thrift_pipe_session(HSessionManager._rootpath, HSessionManager._pipe_name, True):
+            HSessionManager._defaultSessionPool = session_pool
+            return HSessionManager._defaultSessionPool
+        return None
+
+
+class HSessionPool():
+
+    def __init__(self, session_count):
+        """Initialize the session pool
+        """
+        self.sessions = []
+        self.session_count = session_count
+        self.current_id = 0
+        self.task_queue = asyncio.Queue()
+
+    def __iter__(self):
+        return iter(self.sessions)
+
+    def __next__(self):
+        if self.current_id <= self.session_count:
+            x = self.sessions[self.current_id]
+            self.current_id += 1
+            return x
+        else:
+            raise StopIteration
+
+    def __getitem__(self, key):
+        return self.sessions[key]
+
+    # a producer to add task
+    def enqueue_task(self, task, *args):
+        self.task_queue.put_nowait((task, *args))
+
+    # a consumer run in background thread forever
+    def run_task_consumer_in_background(self):
+        loop = asyncio.get_event_loop()
+        t = threading.Thread(target=self.__loop_in_thread, args=(loop,self.run_tasks_consumer_async()))
+        t.start()
+
+    # a async consumer to run task forever
+    async def run_tasks_consumer_async(self):
+        while True:
+            if self.task_queue.qsize() > 0:
+                self.__run_single_task()
+            await asyncio.sleep(0.1)
+
+    # run list of tasks
+    def run_all_tasks(self):
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(self.__run_tasks_available())
+        loop.close() 
+        #loop = asyncio.get_event_loop()
+        #t = threading.Thread(target=self.__loop_in_thread, args=(loop,self.__run_tasks_available()))
+        #t.start()
+
+    async def completed(self):
+        while self.task_queue.qsize() > 0:
+            await asyncio.sleep(0.1)
+
+    def create_thrift_pipe_session(self, rootpath, pipe_name_prefix, auto_close=True, timeout=10000.0):
+        valid_session = 0
+        for i in range(self.session_count):
+            session = HSession()
+            if session.create_thrift_pipe_session(rootpath, pipe_name_prefix+str(i), auto_close, timeout):
+                valid_session += 1
+                self.sessions.append(session)
+        self.session_count = valid_session
+        if valid_session>1:
+            return True
+        return False
+
+    def restart_session_pool(self):
+        # todo
+        return self
+
+    def resize(self, session_count):
+        # todo
+        return self
+
+    async def __run_tasks_available(self):
+        all_assigned_tasks = []
+        while self.task_queue.qsize() > 0:
+            this_task = self.__run_single_task()
+            if this_task:
+                all_assigned_tasks.append(this_task)
+            await asyncio.sleep(0.1)
+        await asyncio.gather(*all_assigned_tasks)
+
+    def __run_single_task(self):
+        avail_session = self.__get_available_session()
+        if avail_session:
+            task_to_proceed, *args = self.task_queue.get_nowait()
+            return asyncio.create_task(task_to_proceed(avail_session, *args))
+            #loop = asyncio.new_event_loop()
+            #asyncio.set_event_loop(loop)
+            #t = threading.Thread(target=self.__loop_in_thread, args=(loop,task_to_proceed(avail_session, *args)))
+            #t.start()
+        return None
+
+    def __get_available_session(self):
+        for session in self.sessions:
+            if session.session_status == HDATA.HSessionStatus.FREE:
+                return session
+        return None
+
+    def __loop_in_thread(self, loop, task):
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(task)
+
+    
+def HSessionTask(task):
+    async def wrapper(*args, **kwargs):
+        assert isinstance(args[0], HSession), "{0}'s first parameter should be HSession".format(task)
+        args[0].session_status = HDATA.HSessionStatus.BUSY
+        await task(*args, **kwargs)
+        args[0].restart_session()
+        args[0].session_status = HDATA.HSessionStatus.FREE
+    return wrapper

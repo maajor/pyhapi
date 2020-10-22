@@ -892,3 +892,8 @@ class ParmChoiceInfo(StructureWithEnums):
         ('valueSH', c_int32)]
 
 
+class HSessionStatus(enum.Enum):
+    INVALID = 0
+    FREE = 1
+    BUSY = 2
+    MAX = 3
