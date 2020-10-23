@@ -39,6 +39,8 @@ class HAsset():
         """
         self.instantiated = False
         self.hda_path = hdapath
+        self.session = session
+        self.library_id = 0
         session.reload_asset_library(self)
 
 
