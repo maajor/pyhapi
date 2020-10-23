@@ -6,12 +6,12 @@ Email   : info@ma-yidong.com
 import logging
 from .hdata import *
 from .hgeo import HGeo, HGeoMesh, HGeoCurve, HGeoHeightfield, HGeoInstancer
-from .hsession import HSession, HSessionManager
+from .hsession import HSession, HSessionManager, HSessionPool, HSessionTask
 from .hnode import HNode, HInputNode, HHeightfieldInputNode, HHeightfieldInputVolumeNode
 from .hasset import HAsset
 from . import hapi as HAPI
 
-__version__ = "0.0.2b2"
+__version__ = "0.0.3b0"
 
 
 import platform
@@ -29,30 +29,35 @@ def __check_libpath(libpath):
     elif sys_platform == "Linux":
         libdll = "libHAPIL.so"
     else:
-        # MacOS is currently unsupported
-        #   Because I dont know the lib name...
-        return False
+        libdll = "libHAPIL.dylib"
 
     return os.path.exists(os.path.join(libpath,libdll) )
 
 def __ensure_hapi_path(libpath):
     path_env = os.environ['PATH'].split(';')
-    if not libpath or __check_libpath(libpath):
+    if libpath or __check_libpath(libpath):
+        print(not libpath)
         if not os.path.normpath(libpath) in [os.path.normpath(p) for p in path_env]:
             path_env.append(libpath)
             os.environ['PATH']=';'.join(path_env)
         return True
     else:
         return any([__check_libpath(p) for p in path_env])
-            
-assert __ensure_hapi_path(""), "libHAPIL not found, Please refer to https://pyhapi.readthedocs.io/en/latest/install.html to setup Houdini Engine's PATH"
 
-from . import hapi
+# ensure "import pyhapi" will not give error even cannot find libHAPIL
+# call HSessionManager.get_or_create_default_session() to initialize, make it free of calling Initialize function
+__library_initialized__ = False
+if __ensure_hapi_path(""):
+    from . import hapi
+    SYS = platform.system()
+    if SYS == "Windows":
+        hapi.HAPI_LIB = cdll.LoadLibrary("libHAPIL")
+    elif SYS == "Linux":
+        hapi.HAPI_LIB = cdll.LoadLibrary("libHAPIL.so")
+    elif SYS == "Darwin":
+        hapi.HAPI_LIB = cdll.LoadLibrary("libHAPIL.dylib")
 
-SYS = platform.system()
-if SYS == "Windows":
-    hapi.HAPI_LIB = cdll.LoadLibrary("libHAPIL")
-elif SYS == "Linux":
-    hapi.HAPI_LIB = cdll.LoadLibrary("libHAPIL.so")
-
-print("HAPI Found")
+    __library_initialized__ = True
+    print("HAPI Found")
+else:
+    print("HAPI Not Found")

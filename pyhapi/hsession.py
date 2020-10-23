@@ -28,6 +28,11 @@ session.save_hip("test.hip")
 """
 import os
 import logging
+import asyncio
+import threading
+import enum
+import time
+import pyhapi
 from . import hdata as HDATA
 from . import hapi as HAPI
 from .hnode import HExistingNode
@@ -35,7 +40,7 @@ from .hnode import HExistingNode
 
 __all__ = [
     # Classes
-    'HSession', 'HSessionManager'
+    'HSession', 'HSessionManager', 'HSessionPool', 'HSessionTask'
 ]
 
 
@@ -116,6 +121,8 @@ class HSession():
         Returns:
             bool: true if the session created successfully, false not.
         """
+        self.root_path = rootpath
+        self.pipe_name = pipe_name
         return self.__internal_create_thrift_pipe_session(rootpath, pipe_name, True, auto_close, timeout)
 
     def __internal_create_thrift_pipe_session(\
@@ -218,6 +225,7 @@ class HSessionManager():
     """
 
     _defaultSession = None
+    _defaultSessionPool = None
     _rootpath = os.getcwd()
     _pipe_name = "hapi"
 
@@ -232,6 +240,8 @@ class HSessionManager():
         Returns:
             HSession: session created
         """
+        # check if can find libHAPIL otherwise return
+        assert pyhapi.__library_initialized__,  "libHAPIL not found, Please refer to https://pyhapi.readthedocs.io/en/latest/install.html to setup Houdini Engine's PATH"
         if rootpath:
             HSessionManager._rootpath = rootpath
         if pipe_name:
@@ -274,3 +284,159 @@ class HSessionManager():
         if session.create_thrift_pipe_session(HSessionManager._rootpath, HSessionManager._pipe_name, True):
             HSessionManager._defaultSession = session
         return None
+
+    @staticmethod
+    def get_or_create_session_pool(session_count=10, rootpath=os.getcwd(), pipe_name = "hapi"):
+        """Restart default session
+
+        Returns:
+            HSession: session created
+        """
+        if HSessionManager._defaultSessionPool is not None:
+            if session_count == HSessionManager._defaultSessionPool._session_count:
+                return HSessionManager._defaultSessionPool.restart_session_pool()
+            else:
+                return HSessionManager._defaultSessionPool.resize(session_count)
+        if rootpath:
+            HSessionManager._rootpath = rootpath
+        if pipe_name:
+            HSessionManager._pipe_name = pipe_name
+        session_pool = HSessionPool(session_count)
+        if session_pool.create_thrift_pipe_session(HSessionManager._rootpath, HSessionManager._pipe_name, True):
+            HSessionManager._defaultSessionPool = session_pool
+            return HSessionManager._defaultSessionPool
+        return None
+
+
+class HSessionPool():
+
+    def __init__(self, session_count, max_task_time: int = 10000):
+        """Initialize the session pool
+        """
+        self.sessions = []
+        self._session_count = session_count
+        self.current_id = 0
+        self.task_queue = asyncio.Queue()
+        self._loop = asyncio.get_event_loop()
+        self._max_task_time = max_task_time
+        self._workers = None
+        self._pipe_name_prefix = "hapi"
+        self._root_path = os.getcwd()
+        self._timeout = 10000
+        self._auto_close = True
+
+    def __iter__(self):
+        return iter(self.sessions)
+
+    def __next__(self):
+        if self.current_id <= self._session_count:
+            x = self.sessions[self.current_id]
+            self.current_id += 1
+            return x
+        else:
+            raise StopIteration
+
+    def __getitem__(self, key):
+        return self.sessions[key]
+
+    # for producer to add task
+    def enqueue_task(self, task, *args):
+        logging.debug("enqueue task {0} with param {1}".format(task, args))
+        self.task_queue.put_nowait((task, *args))
+
+    # for producer to add task
+    async def enqueue_task_async(self, task, *args):
+        logging.debug("enqueue task {0} with param {1}".format(task, args))
+        await self.task_queue.put((task, *args))
+
+    def run_on_task_producer(self, producer):
+        self._loop.run_until_complete(self.run_on_task_producer_async(producer))
+        self._loop.close() 
+
+    async def run_on_task_producer_async(self, producer):
+        task_producer = asyncio.create_task(producer(self))
+        self._workers = [asyncio.create_task(self.__worker_loop(i)) for i in range(self._session_count)]
+        await asyncio.gather(*self._workers, task_producer, return_exceptions=True)
+
+    # run all enqueued tasks by now
+    def run_all_tasks(self):
+        self._loop.run_until_complete(self.__run_tasks_available())
+        self._loop.close() 
+
+    def create_thrift_pipe_session(self, rootpath, pipe_name_prefix, auto_close=True, timeout=10000.0):
+        valid_session = 0
+        self._root_path = rootpath
+        self._timeout = timeout
+        self._auto_close = auto_close
+        self._pipe_name_prefix = pipe_name_prefix
+        for i in range(self._session_count):
+            session = HSession()
+            if session.create_thrift_pipe_session(rootpath, pipe_name_prefix+str(i), auto_close, timeout):
+                valid_session += 1
+                self.sessions.append(session)
+        self._session_count = valid_session
+        if valid_session>1:
+            return True
+        return False
+
+    def restart_session_pool(self):
+        for session in self.sessions:
+            session.restart_session()
+
+    def resize(self, session_count):
+        if session_count < self._session_count:
+            for i in range(session_count, self._session_count):
+                self.sessions[i].check_and_close_existing_session()
+            for i in range(session_count, self._session_count):
+                self.sessions.remove(session_count)
+            self._session_count = session_count
+        elif session_count > self._session_count:
+            valid_session = 0
+            for i in range(self._session_count, session_count):
+                session = HSession()
+                if session.create_thrift_pipe_session(self._root_path, self._pipe_name_prefix+str(i), self._auto_close, self._timeout):
+                    valid_session += 1
+                    self.sessions.append(session)
+            self._session_count += valid_session
+
+    async def __run_tasks_available(self):
+        self._workers = [asyncio.create_task(self.__worker_loop(i)) for i in range(self._session_count)]
+        await self.task_queue.join()
+        for worker in self._workers:
+            worker.cancel()
+
+    # https://github.com/CaliDog/asyncpool
+    # one consumer worker per houdini engine session
+    async def __worker_loop(self, i):
+        while True:
+            got_obj = False
+
+            try:
+                avail_session = self.sessions[i]
+                task_to_proceed, *args = await self.task_queue.get()
+                got_obj = True
+
+                running_coro = asyncio.wait_for(task_to_proceed(avail_session, *args), self._max_task_time, loop=self._loop)
+                await running_coro
+            except asyncio.CancelledError:
+                logging.info("Worker {0} is Cancelled".format(i))
+                break
+            except KeyboardInterrupt as e:
+                logging.info("Worker {0} is Interrupt".format(i))
+                break
+            except (MemoryError, SystemExit) as e:
+                logging.exception(e)
+                raise
+            except BaseException as e:
+                logging.exception(e)
+                logging.exception("Worker Call Failed")
+            finally:
+                if got_obj:
+                    self.task_queue.task_done()
+
+def HSessionTask(task):
+    async def wrapper(*args, **kwargs):
+        assert isinstance(args[0], HSession), "{0}'s first parameter should be HSession".format(task)
+        await task(*args, **kwargs)
+        args[0].restart_session()
+    return wrapper

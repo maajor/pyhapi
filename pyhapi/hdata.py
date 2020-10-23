@@ -890,5 +890,3 @@ class ParmChoiceInfo(StructureWithEnums):
         ('parentParmId', c_int32),
         ('labelSH', c_int32),
         ('valueSH', c_int32)]
-
-

@@ -281,3 +281,85 @@ Marshall Heightfield Out
         if isinstance(geo, ph.HGeoHeightfield):
             print(geo.volume.shape)
             print(geo.volume_name)
+
+
+Process Multiple Tasks with HSessionPool
+++++++++++++++++++++++++++++++++++++++++++++
+
+You need to 
+- add @ph.HSessionTask decorator to your task function
+- use session as first parameter of function
+
+.. code-block:: python
+
+    import asyncio
+    import pyhapi as ph
+
+    @ph.HSessionTask
+    async def session_task(session, index1, index2):
+        print("execute {0} - {1}".format(index1, index2))
+        hda_asset = ph.HAsset(session, "hda/save_cube.hda")
+        asset_node = hda_asset.instantiate(node_name="cube")
+        asset_node.set_param_value("filename", "{0}-{1}".format(index1, index2))
+        await asset_node.press_button_async("execute", status_report_interval=0.1)
+
+    def main():
+        """Main
+        """
+        logging.basicConfig(level=logging.INFO)
+
+        session_pool = ph.HSessionManager.get_or_create_session_pool(3)
+        
+        for i in range(2):
+            for j in range(2):
+                session_pool.enqueue_task(session_task, i, j)
+        
+        # run all task by now and close
+        session_pool.run_all_tasks()
+
+    if __name__ == "__main__":
+        main()
+
+Use Task Producer Coroutine
+++++++++++++++++++++++++++++++++++++++++++++
+
+For tasks, you need to 
+- add @ph.HSessionTask decorator to your task function
+- use HSession as first parameter of function
+
+For task produceer, you need to
+- use HSessionPool as first parameter
+
+.. code-block:: python
+
+    import logging
+    import asyncio
+    import random
+    import pyhapi as ph
+
+    @ph.HSessionTask
+    async def session_task(session : ph.HSession, index1, index2):
+        print("execute {0} - {1}".format(index1, index2))
+        hda_asset = ph.HAsset(session, "hda/save_cube.hda")
+        asset_node = hda_asset.instantiate(node_name="cube")
+        asset_node.set_param_value("filename", "{0}-{1}".format(index1, index2))
+        await asset_node.press_button_async("execute", status_report_interval=0.1)
+
+    async def producer(pool : ph.HSessionPool):
+        while True:
+            val1 = random.randint(1, 10)
+            val2 = random.randint(10, 20)
+            await asyncio.sleep(random.random())
+            await pool.enqueue_task_async(session_task, val1, val2)
+
+    def main():
+        """Main
+        """
+        logging.basicConfig(level=logging.INFO)
+        session_pool = ph.HSessionManager.get_or_create_session_pool(3)
+
+        # run producer and consumer forever
+        session_pool.run_on_task_producer(producer)
+
+    if __name__ == "__main__":
+        main()

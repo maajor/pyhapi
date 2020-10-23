@@ -1,6 +1,12 @@
 Changelog
 ========================================
 
+0.0.3b0
+-----------------------
+
+* Add HSessionPool to async process multiple tasks
+    * Support consumer/producer pattern
+
 0.0.2b2
 -----------------------
 
