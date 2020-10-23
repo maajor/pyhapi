@@ -11,7 +11,7 @@ from .hnode import HNode, HInputNode, HHeightfieldInputNode, HHeightfieldInputVo
 from .hasset import HAsset
 from . import hapi as HAPI
 
-__version__ = "0.0.2b2"
+__version__ = "0.0.3b0"
 
 
 import platform

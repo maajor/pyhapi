@@ -552,7 +552,7 @@ async def wait_cook_async(session, status_report_interval=0.1, status_verbosity=
             Defaults to 1.
     """
     if status_verbosity>HDATA.StatusVerbosity.WARNINGS:
-        logging.info("-------------Start Cooking at Session {0}!---------------".format(session.id))
+        logging.info("-------------Start  Cooking at Session {0}!---------------".format(session.id))
     cook_status = c_int32()
     cook_result = HDATA.Result.ALREADY_INITIALIZED
     while True:
@@ -571,7 +571,7 @@ async def wait_cook_async(session, status_report_interval=0.1, status_verbosity=
     if cook_status.value == HDATA.State.READY_WITH_FATAL_ERRORS:
         logging.error("Cook with Fatal Error at session {0} {1}".format(session.id, _get_status_string(session)))
     if status_verbosity>HDATA.StatusVerbosity.WARNINGS:
-        logging.info("-------------Finish  Cooking at Session {0}!---------------".format(session.id))
+        logging.info("-------------Finish Cooking at Session {0}!---------------".format(session.id))
     assert cook_result == HDATA.Result.SUCCESS and\
         cook_status.value == HDATA.State.READY,\
         "CookNode Failed with {0} at session {1} and Cook Status is {2}".\

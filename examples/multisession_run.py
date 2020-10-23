@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Example of getting/setting params of HDA asset
+"""Example of start HSessionPool and run multiple task async
 Author  : Maajor
 Email   : info@ma-yidong.com
 """
@@ -8,7 +8,7 @@ import asyncio
 import pyhapi as ph
 
 @ph.HSessionTask
-async def session_task(session, index1, index2):
+async def session_task(session : ph.HSession, index1, index2):
     print("execute {0} - {1}".format(index1, index2))
     hda_asset = ph.HAsset(session, "hda/save_cube.hda")
     asset_node = hda_asset.instantiate(node_name="cube")
@@ -26,6 +26,7 @@ def main():
         for j in range(2):
             session_pool.enqueue_task(session_task, i, j)
     
+    # run all task by now and close
     session_pool.run_all_tasks()
 
 if __name__ == "__main__":

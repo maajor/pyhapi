@@ -52,6 +52,7 @@ Clone this repo and run ```python setup.py install```
 * Marshall in/out curve  
 * Marshall in/out mesh  
 * Marshall in/out heightfield  
+* SessionPool and task-based processing
   
 Following feature in Houdini Engine is NOT supported yet:  
 * Marshall in/out volume  
@@ -98,3 +99,22 @@ see more in
 [Example: heightfield_marshal_input](https://github.com/maajor/pyhapi/blob/master/examples/heightfield_marshall_input.py)  
 [Example: heightfield_marshal_output](https://github.com/maajor/pyhapi/blob/master/examples/heightfield_marshall_output.py)  
 
+## Session Pool
+
+### Producer/Consumer  
+```
+session_pool = ph.HSessionManager.get_or_create_session_pool(3)
+
+session_pool.run_on_task_producer(producer)
+```
+[Example: multisession_producer](https://github.com/maajor/pyhapi/blob/master/examples/multisession_producer.py)  
+
+### Batch Run  
+```
+session_pool = ph.HSessionManager.get_or_create_session_pool(3)
+    
+session_pool.enqueue_task(session_task, i, j)
+    
+session_pool.run_all_tasks()
+```
+[Example: multisession_run](https://github.com/maajor/pyhapi/blob/master/examples/multisession_run.py)  
