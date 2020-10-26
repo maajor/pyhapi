@@ -19,14 +19,14 @@ async def session_task(session : ph.HSession, index1, index2):
     asset_node.set_param_value("filename", "{0}-{1}".format(index1, index2))
     await asset_node.press_button_async("execute", status_report_interval=0.1)
 
-def producer(pool, n):
+def producer(n):
     while True:
         val1 = random.randint(1, 10)
         val2 = random.randint(10, 20)
         time.sleep(5*random.random())
         print("Task Start on {0}-{1}".format(n, threading.currentThread().getName()))
         try:
-            fut = pool.enqueue_task(session_task, val1, val2)
+            fut = ph.HSessionManager.get_or_create_session_pool().enqueue_task(session_task, val1, val2)
             # block this producer thread
             while not fut.done():
                 time.sleep(0.5)
@@ -46,7 +46,7 @@ def main():
 
     executor = ThreadPoolExecutor(max_workers=4)
     for i in range(0,4):
-        executor.submit(producer, session_pool, i)
+        executor.submit(producer, i)
 
 if __name__ == "__main__":
     main()

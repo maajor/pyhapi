@@ -359,10 +359,9 @@ class HSessionPool():
     async def run_on_task_producer_async(self, producer):
         self._workers = [asyncio.create_task(self.__worker_loop(i)) for i in range(self._session_count)]
         if producer is None:
-            print("producer is None")
             await asyncio.gather(*self._workers, return_exceptions=True)
         else:
-            task_producer = asyncio.create_task(producer(self))
+            task_producer = asyncio.create_task(producer())
             await asyncio.gather(*self._workers, task_producer, return_exceptions=True)
 
     # run all enqueued tasks by now
@@ -438,12 +437,10 @@ class HSessionPool():
                 break
             except (MemoryError, SystemExit) as e:
                 logging.exception(e)
-                fut.set_exception(e)
                 raise
             except BaseException as e:
                 logging.exception(e)
                 logging.exception("Worker Call Failed")
-                fut.set_exception(e)
             finally:
                 if got_obj:
                     fut.set_result(True)
