@@ -282,13 +282,15 @@ Marshall Heightfield Out
             print(geo.volume.shape)
             print(geo.volume_name)
 
+Session Pool
+--------------------------------------------
 
 Process Multiple Tasks with HSessionPool
 ++++++++++++++++++++++++++++++++++++++++++++
 
-You need to 
-- add @ph.HSessionTask decorator to your task function
-- use session as first parameter of function
+You need to   
+- add @ph.HSessionTask decorator to your task function  
+- use session as first parameter of function  
 
 .. code-block:: python
 
@@ -323,12 +325,12 @@ You need to
 Use Task Producer Coroutine
 ++++++++++++++++++++++++++++++++++++++++++++
 
-For tasks, you need to 
-- add @ph.HSessionTask decorator to your task function
-- use HSession as first parameter of function
+For tasks, you need to   
+- add @ph.HSessionTask decorator to your task function  
+- use HSession as first parameter of function  
 
-For task produceer, you need to
-- use HSessionPool as first parameter
+For task produceer, you need to  
+- use HSessionPool as first parameter  
 
 .. code-block:: python
 

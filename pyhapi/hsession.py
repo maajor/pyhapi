@@ -286,7 +286,7 @@ class HSessionManager():
         return None
 
     @staticmethod
-    def get_or_create_session_pool(session_count=10, rootpath=os.getcwd(), pipe_name = "hapi"):
+    def get_or_create_session_pool(session_count=4, rootpath=os.getcwd(), pipe_name = "hapi"):
         """Restart default session
 
         Returns:
@@ -294,7 +294,7 @@ class HSessionManager():
         """
         if HSessionManager._defaultSessionPool is not None:
             if session_count == HSessionManager._defaultSessionPool._session_count:
-                return HSessionManager._defaultSessionPool.restart_session_pool()
+                return HSessionManager._defaultSessionPool
             else:
                 return HSessionManager._defaultSessionPool.resize(session_count)
         if rootpath:
@@ -341,27 +341,38 @@ class HSessionPool():
 
     # for producer to add task
     def enqueue_task(self, task, *args):
+        fut = self._loop.create_future()
         logging.debug("enqueue task {0} with param {1}".format(task, args))
-        self.task_queue.put_nowait((task, *args))
+        self._loop.call_soon_threadsafe(self.task_queue.put_nowait, (fut, task, *args))
+        return fut
 
     # for producer to add task
     async def enqueue_task_async(self, task, *args):
+        fut = self._loop.create_future()
         logging.debug("enqueue task {0} with param {1}".format(task, args))
-        await self.task_queue.put((task, *args))
+        await self.task_queue.put((fut, task, *args))
 
     def run_on_task_producer(self, producer):
         self._loop.run_until_complete(self.run_on_task_producer_async(producer))
         self._loop.close() 
 
     async def run_on_task_producer_async(self, producer):
-        task_producer = asyncio.create_task(producer(self))
         self._workers = [asyncio.create_task(self.__worker_loop(i)) for i in range(self._session_count)]
-        await asyncio.gather(*self._workers, task_producer, return_exceptions=True)
+        if producer is None:
+            print("producer is None")
+            await asyncio.gather(*self._workers, return_exceptions=True)
+        else:
+            task_producer = asyncio.create_task(producer(self))
+            await asyncio.gather(*self._workers, task_producer, return_exceptions=True)
 
     # run all enqueued tasks by now
     def run_all_tasks(self):
         self._loop.run_until_complete(self.__run_tasks_available())
         self._loop.close() 
+
+    def run_task_consumer_on_background(self):
+        t = threading.Thread(target=self.__loop_in_thread, args=(self._loop,self.run_on_task_producer_async(None)))
+        t.start()
 
     def create_thrift_pipe_session(self, rootpath, pipe_name_prefix, auto_close=True, timeout=10000.0):
         valid_session = 0
@@ -382,6 +393,7 @@ class HSessionPool():
     def restart_session_pool(self):
         for session in self.sessions:
             session.restart_session()
+        return self
 
     def resize(self, session_count):
         if session_count < self._session_count:
@@ -413,12 +425,12 @@ class HSessionPool():
 
             try:
                 avail_session = self.sessions[i]
-                task_to_proceed, *args = await self.task_queue.get()
+                fut, task_to_proceed, *args = await self.task_queue.get()
                 got_obj = True
 
                 running_coro = asyncio.wait_for(task_to_proceed(avail_session, *args), self._max_task_time, loop=self._loop)
                 await running_coro
-            except asyncio.CancelledError:
+            except asyncio.CancelledError as e:
                 logging.info("Worker {0} is Cancelled".format(i))
                 break
             except KeyboardInterrupt as e:
@@ -426,13 +438,20 @@ class HSessionPool():
                 break
             except (MemoryError, SystemExit) as e:
                 logging.exception(e)
+                fut.set_exception(e)
                 raise
             except BaseException as e:
                 logging.exception(e)
                 logging.exception("Worker Call Failed")
+                fut.set_exception(e)
             finally:
                 if got_obj:
+                    fut.set_result(True)
                     self.task_queue.task_done()
+
+    def __loop_in_thread(self, loop, task):
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(task)
 
 def HSessionTask(task):
     async def wrapper(*args, **kwargs):

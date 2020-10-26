@@ -27,7 +27,7 @@ def main():
     """Main
     """
     logging.basicConfig(level=logging.INFO)
-    session_pool = ph.HSessionManager.get_or_create_session_pool(3)
+    session_pool = ph.HSessionManager.get_or_create_session_pool()
 
     # run producer and consumer forever
     session_pool.run_on_task_producer(producer)
