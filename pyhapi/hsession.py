@@ -287,10 +287,15 @@ class HSessionManager():
 
     @staticmethod
     def get_or_create_session_pool(session_count=4, rootpath=os.getcwd(), pipe_name = "hapi"):
-        """Restart default session
+        """Get or create an session pool
+
+        Args:
+            session_count (int, optional): number of sessions to start
+            rootpath (str, optional): working directory of sessions
+            pipe_name (str, optional): name prefix of pipe name communicate with hsession
 
         Returns:
-            HSession: session created
+            HSessionPool: session pool created
         """
         if HSessionManager._defaultSessionPool is not None:
             if session_count == HSessionManager._defaultSessionPool._session_count:
@@ -312,6 +317,11 @@ class HSessionPool():
 
     def __init__(self, session_count, max_task_time: int = 10000):
         """Initialize the session pool
+
+        Args:
+            session_count (int): number of sessions
+            max_task_time (int, optional): max running time of a session, otherwise kill the task
+
         """
         self.sessions = []
         self._session_count = session_count
@@ -341,6 +351,15 @@ class HSessionPool():
 
     # for producer to add task
     def enqueue_task(self, task, *args):
+        """enqueue a session task into session pool
+
+        Args:
+            task (func): a houdini task to run
+            *args : arguments pass to this task
+
+        Returns:
+            asyncio.Future: future object of task execution
+        """
         fut = self._loop.create_future()
         logging.debug("enqueue task {0} with param {1}".format(task, args))
         self._loop.call_soon_threadsafe(self.task_queue.put_nowait, (fut, task, *args))
@@ -348,15 +367,31 @@ class HSessionPool():
 
     # for producer to add task
     async def enqueue_task_async(self, task, *args):
+        """enque a session task asynch
+
+        Args:
+            task (func): a houdini task to run
+            *args : arguments pass to this task
+        """
         fut = self._loop.create_future()
         logging.debug("enqueue task {0} with param {1}".format(task, args))
         await self.task_queue.put((fut, task, *args))
 
     def run_on_task_producer(self, producer):
+        """run a task producer and consuming task with session pool
+
+        Args:
+            producer (func): producer function to generate and enqueue tasks
+        """
         self._loop.run_until_complete(self.run_on_task_producer_async(producer))
         self._loop.close() 
 
     async def run_on_task_producer_async(self, producer):
+        """run a task producer and consuming task with session pool async
+
+        Args:
+            producer (func): producer function to generate and enqueue tasks
+        """
         self._workers = [asyncio.create_task(self.__worker_loop(i)) for i in range(self._session_count)]
         if producer is None:
             await asyncio.gather(*self._workers, return_exceptions=True)
@@ -364,16 +399,36 @@ class HSessionPool():
             task_producer = asyncio.create_task(producer())
             await asyncio.gather(*self._workers, task_producer, return_exceptions=True)
 
-    # run all enqueued tasks by now
     def run_all_tasks(self):
+        """run all enqueued tasks by now
+        """
         self._loop.run_until_complete(self.__run_tasks_available())
         self._loop.close() 
 
     def run_task_consumer_on_background(self):
+        """run task consumer on background thread
+        """
         t = threading.Thread(target=self.__loop_in_thread, args=(self._loop,self.run_on_task_producer_async(None)))
         t.start()
 
     def create_thrift_pipe_session(self, rootpath, pipe_name_prefix, auto_close=True, timeout=10000.0):
+        """Create the session in thrift-pipe manner
+
+        Args:
+            rootpath (string): file path to hsession project's root path, \
+                it could contain /hda folder
+            pipe_name_prefix (string): prefix of IPC pipe name
+            auto_close (bool, optional): Close the server automatically when\
+                 all clients disconnect from it. Defaults to True.
+            timeout (float, optional): Timeout in milliseconds for waiting on \
+                the server to signal that it's ready to serve. If the server \
+                    fails to signal within this time interval, the start server \
+                        call fails and the server process is terminated. \
+                            Defaults to 10000.0.
+
+        Returns:
+            bool: true if the session created successfully, false not.
+        """
         valid_session = 0
         self._root_path = rootpath
         self._timeout = timeout
@@ -390,11 +445,21 @@ class HSessionPool():
         return False
 
     def restart_session_pool(self):
+        """restart the session pool
+
+        Returns:
+            HSessionPool: this session pool itself
+        """
         for session in self.sessions:
             session.restart_session()
         return self
 
     def resize(self, session_count):
+        """resize the session pool to desired size
+
+        Args:
+            session_count (int): target size of this session pool
+        """
         if session_count < self._session_count:
             for i in range(session_count, self._session_count):
                 self.sessions[i].check_and_close_existing_session()
@@ -411,14 +476,20 @@ class HSessionPool():
             self._session_count += valid_session
 
     async def __run_tasks_available(self):
+        """run all current tasks until queue is empty.
+        """
         self._workers = [asyncio.create_task(self.__worker_loop(i)) for i in range(self._session_count)]
         await self.task_queue.join()
         for worker in self._workers:
             worker.cancel()
 
-    # https://github.com/CaliDog/asyncpool
-    # one consumer worker per houdini engine session
     async def __worker_loop(self, i):
+        """a consumer worker per houdini engine session
+            ref: https://github.com/CaliDog/asyncpool
+
+        Args:
+            i (int): id of HSession
+        """
         while True:
             got_obj = False
 
@@ -451,6 +522,8 @@ class HSessionPool():
         loop.run_until_complete(task)
 
 def HSessionTask(task):
+    """A decorator for houdini's task
+    """
     async def wrapper(*args, **kwargs):
         assert isinstance(args[0], HSession), "{0}'s first parameter should be HSession".format(task)
         await task(*args, **kwargs)
