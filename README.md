@@ -103,7 +103,7 @@ see more in
 
 ### Producer/Consumer  
 ```
-session_pool = ph.HSessionManager.get_or_create_session_pool(3)
+session_pool = ph.HSessionManager.get_or_create_session_pool()
 
 session_pool.run_on_task_producer(producer)
 ```
@@ -111,10 +111,25 @@ session_pool.run_on_task_producer(producer)
 
 ### Batch Run  
 ```
-session_pool = ph.HSessionManager.get_or_create_session_pool(3)
+session_pool = ph.HSessionManager.get_or_create_session_pool()
     
 session_pool.enqueue_task(session_task, i, j)
     
 session_pool.run_all_tasks()
 ```
 [Example: multisession_run](https://github.com/maajor/pyhapi/blob/master/examples/multisession_run.py)  
+
+### Threaded Task Producer  
+```
+session_pool = ph.HSessionManager.get_or_create_session_pool()
+    
+session_pool.run_task_consumer_on_background()
+
+executor = ThreadPoolExecutor(max_workers=4)
+for i in range(0,4):
+    executor.submit(producer, i)
+```
+[Example: multisession_run](https://github.com/maajor/pyhapi/blob/master/examples/multisession_producer_threaded.py)  
+
+### Flask Server Demo  
+[Example: multisession_run](https://github.com/maajor/pyhapi/blob/master/examples/server_demo.py)  

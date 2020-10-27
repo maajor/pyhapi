@@ -289,15 +289,18 @@ class HNodeBase():
         """
         if not self.is_inited():
             return False
+        if param_name not in self.param_id_dict.keys():
+            logging.error("Parameter {0} not exist in node".format(param_name))
+            return False
         param_idx = self.param_id_dict[param_name]
         paraminfo = self.param_info[param_idx]
         try:
             if paraminfo.is_int():
                 HAPI.set_parm_int_value(self.session.hapi_session, \
-                    self.node_id, param_name, value, tupleid)
+                    self.node_id, param_name, int(value), tupleid)
             elif paraminfo.is_float():
                 HAPI.set_parm_float_value(\
-                    self.session.hapi_session, self.node_id, param_name, value, tupleid)
+                    self.session.hapi_session, self.node_id, param_name, float(value), tupleid)
             elif paraminfo.is_node() and isinstance(value, HNodeBase):
                 HAPI.set_parm_node_value(self.session.hapi_session, \
                     self.node_id, param_name, value.node_id)

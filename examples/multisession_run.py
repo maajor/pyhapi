@@ -20,7 +20,7 @@ def main():
     """
     logging.basicConfig(level=logging.INFO)
 
-    session_pool = ph.HSessionManager.get_or_create_session_pool(3)
+    session_pool = ph.HSessionManager.get_or_create_session_pool()
     
     for i in range(2):
         for j in range(2):

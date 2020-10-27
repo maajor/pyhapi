@@ -1,6 +1,13 @@
 Changelog
 ========================================
 
+0.0.3b1
+-----------------------
+
+* Update HSessionPool to support threaded task producer
+    * Add example to create flask houdini server
+* Fox some bugs on setting parameter fail onto node
+
 0.0.3b0
 -----------------------
 

@@ -16,18 +16,18 @@ async def session_task(session : ph.HSession, index1, index2):
     asset_node.set_param_value("filename", "{0}-{1}".format(index1, index2))
     await asset_node.press_button_async("execute", status_report_interval=0.1)
 
-async def producer(pool : ph.HSessionPool):
+async def producer():
     while True:
         val1 = random.randint(1, 10)
         val2 = random.randint(10, 20)
         await asyncio.sleep(random.random())
-        await pool.enqueue_task_async(session_task, val1, val2)
+        await ph.HSessionManager.get_or_create_session_pool().enqueue_task_async(session_task, val1, val2)
 
 def main():
     """Main
     """
     logging.basicConfig(level=logging.INFO)
-    session_pool = ph.HSessionManager.get_or_create_session_pool(3)
+    session_pool = ph.HSessionManager.get_or_create_session_pool()
 
     # run producer and consumer forever
     session_pool.run_on_task_producer(producer)
