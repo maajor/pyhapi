@@ -234,12 +234,12 @@ class HNodeBase():
         param_idx = self.param_id_dict[param_name]
         paraminfo = self.param_info[param_idx]
         if paraminfo.is_int():
-            return type(int)
+            return int
         if paraminfo.is_float():
-            return type(float)
+            return float
         if paraminfo.is_string():
-            return type(str)
-        return type(None)
+            return str
+        return None
 
     def get_param_choice_list(self, param_name):
         """Get param choice list

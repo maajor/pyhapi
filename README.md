@@ -3,6 +3,8 @@
 
 Object-Oriented Python Wrapper for Houdini Engine's C API
 
+Note that this is 3rd party binding, not official.
+
 # Documentation  
 
 Please visit [pyhapi documentation](https://pyhapi.readthedocs.io).  
