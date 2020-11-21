@@ -131,7 +131,7 @@ executor = ThreadPoolExecutor(max_workers=4)
 for i in range(0,4):
     executor.submit(producer, i)
 ```
-[Example: multisession_run](https://github.com/maajor/pyhapi/blob/master/examples/multisession_producer_threaded.py)  
+[Example: multisession_producer_threaded](https://github.com/maajor/pyhapi/blob/master/examples/multisession_producer_threaded.py)  
 
 ### Flask Server Demo  
-[Example: multisession_run](https://github.com/maajor/pyhapi/blob/master/examples/server_demo.py)  
+[Example: server_demo](https://github.com/maajor/pyhapi/blob/master/examples/server_demo.py)  
