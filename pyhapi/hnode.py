@@ -44,7 +44,7 @@ import traceback
 from . import hapi as HAPI
 from . import hdata as HDATA
 from .hgeo import HGeoMesh, HGeoCurve, HGeo, HGeoHeightfield, HGeoVolume, HGeoInstancer
-from .hparm import *
+from .hparm import HParmFactory
 
 class HNodeBase():
     """A base class for houdini engine's node, including shared operation\
@@ -203,7 +203,8 @@ class HNodeBase():
         self.param_id_dict.clear()
         for i in range(0, self.node_info.parmCount):
             parm = parm_factory.get_parm(self.param_info[i])
-            self.parms.append(parm)
+            if parm:
+                self.parms.append(parm)
             namesh = self.param_info[i].nameSH
             namestr = HAPI.get_string(self.session.hapi_session, namesh)
             self.param_id_dict[namestr] = i
