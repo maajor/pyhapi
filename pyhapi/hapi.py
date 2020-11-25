@@ -1568,15 +1568,17 @@ def get_attribute_string_data(session, node_id, part_id, name, attrib_info):
     Returns:
         np.ndarray(str): data of querying named attribute
     """
-    data_buffer = (c_char_p * (attrib_info.count * attrib_info.tupleSize))()
+    data_buffer = (c_int * (attrib_info.count * attrib_info.tupleSize))()
     result = HAPI_LIB.HAPI_GetAttributeStringData(
         byref(session), node_id, part_id, c_char_p(name.encode('utf-8')),
-        byref(attrib_info), -1, byref(data_buffer), 0, attrib_info.count)
+        byref(attrib_info), byref(data_buffer), 0, attrib_info.count)
     assert result == HDATA.Result.SUCCESS,\
         "GetAttributeStringData Failed with {0}".format(
             HDATA.Result(result).name)
-    data_np = np.frombuffer(data_buffer, np.bytes_)
-    return np.reshape(data_np, (attrib_info.count, attrib_info.tupleSize))
+    data_str = np.ndarray((attrib_info.count * attrib_info.tupleSize), dtype=np.dtype('O'))
+    for i in range(0, attrib_info.count * attrib_info.tupleSize):
+        data_str[i] = get_string(session, c_int(data_buffer[i]))
+    return np.reshape(data_str, (attrib_info.count, attrib_info.tupleSize))
 
 
 STORAGE_TYPE_TO_GET_ATTRIB = {
