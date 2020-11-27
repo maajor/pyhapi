@@ -9,6 +9,7 @@ from .hgeo import HGeo, HGeoMesh, HGeoCurve, HGeoHeightfield, HGeoInstancer
 from .hsession import HSession, HSessionManager, HSessionPool, HSessionTask
 from .hnode import HNode, HInputNode, HHeightfieldInputNode, HHeightfieldInputVolumeNode
 from .hasset import HAsset
+from .hparm import *
 from . import hapi as HAPI
 
 __version__ = "0.0.3b2"

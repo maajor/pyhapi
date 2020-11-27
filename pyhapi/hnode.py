@@ -44,7 +44,7 @@ import traceback
 from . import hapi as HAPI
 from . import hdata as HDATA
 from .hgeo import HGeoMesh, HGeoCurve, HGeo, HGeoHeightfield, HGeoVolume, HGeoInstancer
-from .hparm import HParmFactory
+from .hparm import HParmFactory, HParmChoice, HParmToggle, HParmButton
 
 class HNodeBase():
     """A base class for houdini engine's node, including shared operation\
@@ -65,10 +65,7 @@ class HNodeBase():
         self.name = ""
         self.path = ""
         self.node_info = HDATA.NodeInfo()
-        self.parms = []
-        self.param_info = []
-        self.param_id_dict = {}
-        self.param_choice_lists = {}
+        self.parms = {}
 
     def is_inited(self):
         """If this node is inited
@@ -200,22 +197,17 @@ class HNodeBase():
             self.session.hapi_session, self.node_id, self.node_info)
         
         parm_factory = HParmFactory(self.session, self.node_id)
-        self.param_id_dict.clear()
         for i in range(0, self.node_info.parmCount):
             parm = parm_factory.get_parm(self.param_info[i])
+            # not collect invisible parms!
             if parm:
-                self.parms.append(parm)
-            namesh = self.param_info[i].nameSH
-            namestr = HAPI.get_string(self.session.hapi_session, namesh)
-            self.param_id_dict[namestr] = i
+                self.parms[parm.name] = parm
 
-        # collect choice lists
-        choice_lists = HAPI.get_parm_choice_lists(self.session.hapi_session, self.node_id)
-        self.param_choice_lists.clear()
-        for c in choice_lists:
-            if c.parentParmId not in self.param_choice_lists:
-                self.param_choice_lists[c.parentParmId] = []
-            self.param_choice_lists[c.parentParmId].append(c)
+    def get_visible_params(self):
+        return [param for param in self.parms.values() if not param.invisible]
+
+    def get_all_params(self):
+        return self.parms.values()
 
     def refresh_params(self):
         self._collect_params()
@@ -226,7 +218,7 @@ class HNodeBase():
         Returns:
             [str]: Name of all params
         """
-        return self.param_id_dict.keys()
+        return self.parms.keys()
 
     def get_param_type(self, param_name):
         """Get param's type by name
@@ -237,29 +229,7 @@ class HNodeBase():
         Returns:
             type: type of param
         """
-        param_idx = self.param_id_dict[param_name]
-        paraminfo = self.param_info[param_idx]
-        if paraminfo.is_int():
-            return int
-        if paraminfo.is_float():
-            return float
-        if paraminfo.is_string():
-            return str
-        return None
-
-    def get_param_choice_list(self, param_name):
-        """Get param choice list
-
-        Args:
-            param_name (str): Parameter name to retrieve
-
-        Returns:
-            [int]: param choice
-        """
-        param_idx = self.param_id_dict[param_name]
-        param_id = self.param_info[param_idx].id
-        return self.param_choice_lists[param_id]
-
+        return type(self.parms[param_name])
 
     def get_param_value(self, param_name, tupleid=0):
         """Get param value
@@ -272,15 +242,7 @@ class HNodeBase():
         """
         if not self.is_inited():
             return None
-        param_idx = self.param_id_dict[param_name]
-        paraminfo = self.param_info[param_idx]
-        if paraminfo.is_int():
-            return HAPI.get_parm_int_value(self.session.hapi_session, self.node_id, param_name, tupleid)
-        if paraminfo.is_float():
-            return HAPI.get_parm_float_value(self.session.hapi_session, self.node_id, param_name, tupleid)
-        if paraminfo.is_string():
-            return HAPI.get_parm_string_value(self.session.hapi_session, self.node_id, param_name, tupleid)
-        return None
+        return self.parms[param_name].get_value()
 
     def set_param_value(self, param_name, value, tupleid=0):
         """Set parameter value
@@ -295,24 +257,17 @@ class HNodeBase():
         """
         if not self.is_inited():
             return False
-        if param_name not in self.param_id_dict.keys():
+        if param_name not in self.parms.keys():
             logging.error("Parameter {0} not exist in node".format(param_name))
             return False
-        param_idx = self.param_id_dict[param_name]
-        paraminfo = self.param_info[param_idx]
         try:
-            if paraminfo.is_int():
-                HAPI.set_parm_int_value(self.session.hapi_session, \
-                    self.node_id, param_name, int(value), tupleid)
-            elif paraminfo.is_float():
-                HAPI.set_parm_float_value(\
-                    self.session.hapi_session, self.node_id, param_name, float(value), tupleid)
-            elif paraminfo.is_node() and isinstance(value, HNodeBase):
-                HAPI.set_parm_node_value(self.session.hapi_session, \
-                    self.node_id, param_name, value.node_id)
-            elif paraminfo.is_string():
-                HAPI.set_parm_string_value(self.session.hapi_session, \
-                    self.node_id, paraminfo.id, value, tupleid)
+            parm = self.parms[param_name]
+            if parm is HParmButton:
+                raise TypeError("{0} is a button, use press button".format(parm.name))
+            elif parm is HParmChoice or HParmToggle:
+                parm.set_value(value)
+            else:
+                parm.set_value(value, tupleid)
             return True
         except AssertionError as error:
             logging.error("HAPI excecution failed")
@@ -358,11 +313,10 @@ class HNodeBase():
             return
         #paramid = self.param_id_dict[param_name]
         #paraminfo = self.param_info[paramid]
-        HAPI.set_parm_int_value(self.session.hapi_session, self.node_id, param_name, 1)
-        HAPI.wait_cook(self.session.hapi_session, status_report_interval, status_verbosity)
-        HAPI.set_parm_int_value(self.session.hapi_session, self.node_id, param_name, 0)
+        param = self.parms[param_name]
+        param.press_button(status_report_interval, status_verbosity)
 
-    async def press_button_async(self, param_name, status_report_interval=5.0):
+    async def press_button_async(self, param_name, status_report_interval=5.0, status_verbosity=HDATA.StatusVerbosity.ALL):
         """Press button in this node in async/non-blocking manner
 
         Args:
@@ -374,9 +328,8 @@ class HNodeBase():
             return
         #paramid = self.param_id_dict[param_name]
         #paraminfo = self.param_info[paramid]
-        HAPI.set_parm_int_value(self.session.hapi_session, self.node_id, param_name, 1)
-        await HAPI.wait_cook_async(self.session.hapi_session, status_report_interval)
-        HAPI.set_parm_int_value(self.session.hapi_session, self.node_id, param_name, 0)
+        param = self.parms[param_name]
+        await param.press_async(status_report_interval, status_verbosity)
 
     def get_display_geos(self):
         """Get display geo of this node

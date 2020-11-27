@@ -18,6 +18,7 @@ class HParm():
     def __init__(self, session, parm_info, node_id):
         self.session = session
         self.node_id = node_id
+        self.parm_info = parm_info
         self.id = parm_info.id
         self.name = HAPI.get_string(self.session.hapi_session, parm_info.nameSH)
         self.label = HAPI.get_string(self.session.hapi_session, parm_info.labelSH)
@@ -48,7 +49,7 @@ class HParm():
     def get_value(self):
         raise NotImplementedError()
 
-    def set_value(self):
+    def set_value(self, value):
         raise NotImplementedError()
 
     def get_size(self):
@@ -57,10 +58,15 @@ class HParm():
 class HParmFloat(HParm):
 
     def set_value(self, value, index=0):
-        if value is not float:
-            raise TypeError()
-        HAPI.set_parm_float_value(\
+        if isinstance(value, float) and index >=0 and index < self.size:
+            HAPI.set_parm_float_value(\
                     self.session.hapi_session, self.node_id, self.name, float(value), index)
+        elif (isinstance(value, list) or isinstance(value, np.ndarray)) and len(value)==self.size:
+            for i in range(0, self.size):
+                HAPI.set_parm_float_value(\
+                    self.session.hapi_session, self.node_id, self.name, float(value[i]), i)
+        else:
+            raise TypeError("Parameter to set is not float or list/ndarray of float")
 
     def get_value(self):
         if self.size == 1:
@@ -74,10 +80,15 @@ class HParmFloat(HParm):
 class HParmString(HParm):
 
     def set_value(self, value, index=0):
-        if value is not str:
-            raise TypeError("Parameter to set is not string")
-        HAPI.set_parm_string_value(self.session.hapi_session, \
-                    self.node_id, self.id, value, 0)
+        if isinstance(value, str) and index >=0 and index < self.size:
+            HAPI.set_parm_string_value(\
+                    self.session.hapi_session, self.node_id, self.name, value, index)
+        elif (isinstance(value, list) or isinstance(value, np.ndarray)) and len(value)==self.size:
+            for i in range(0, self.size):
+                HAPI.set_parm_string_value(\
+                    self.session.hapi_session, self.node_id, self.name, value[i], i)
+        else:
+            raise TypeError("Parameter to set is not string or list/ndarray of string")
 
     def get_value(self):
         if self.size == 1:
@@ -91,10 +102,15 @@ class HParmString(HParm):
 class HParmInt(HParm):
 
     def set_value(self, value, index=0):
-        if value is not int:
-            raise TypeError("Parameter to set is not int")
-        HAPI.set_parm_int_value(self.session.hapi_session, \
-                    self.node_id, self.name, int(value), index)
+        if isinstance(value, int) and index >=0 and index < self.size:
+            HAPI.set_parm_int_value(\
+                    self.session.hapi_session, self.node_id, self.name, value, index)
+        elif (isinstance(value, list) or isinstance(value, np.ndarray)) and len(value)==self.size:
+            for i in range(0, self.size):
+                HAPI.set_parm_int_value(\
+                    self.session.hapi_session, self.node_id, self.name, int(value[i]), i)
+        else:
+            raise TypeError("Parameter to set is not int or list/ndarray of int")
 
     def get_value(self):
         if self.size == 1:
@@ -105,7 +121,7 @@ class HParmInt(HParm):
                 values.append(HAPI.get_parm_int_value(self.session.hapi_session, self.node_id, self.name, index))
             return values
 
-class HParmNode(HParmString):
+class HParmNode(HParm):
 
     def set_value(self, value):
         #if value is not HNodeBase:
@@ -116,120 +132,18 @@ class HParmNode(HParmString):
     def get_value(self):
         return HAPI.get_parm_string_value(self.session.hapi_session, self.node_id, self.name, 0)
 
-class HParmVector2(HParm):
-
-    def set_value(self, value):
-        valid = (isinstance(value, list) or isinstance(value, np.ndarray)) and len(value)==2
-        if not valid:
-            raise TypeError("Parameter to set need to be list or ndarray of length 2")
-        HAPI.set_parm_float_value(self.session.hapi_session, \
-                    self.node_id, self.id, float(value[0]), 0)
-        HAPI.set_parm_float_value(self.session.hapi_session, \
-                    self.node_id, self.id, float(value[1]), 1)
-
-    def get_value(self):
-        values = []
-        for index in range(2):
-            values.append(HAPI.get_parm_float_value(self.session.hapi_session, self.node_id, self.name, index))
-        return values
-
-class HParmVector3(HParm):
-
-    def set_value(self, value):
-        valid = (isinstance(value, list) or isinstance(value, np.ndarray)) and len(value)==3
-        if not valid:
-            raise TypeError("Parameter to set need to be list or ndarray of length 3")
-        HAPI.set_parm_float_value(self.session.hapi_session, \
-                    self.node_id, self.id, float(value[0]), 0)
-        HAPI.set_parm_float_value(self.session.hapi_session, \
-                    self.node_id, self.id, float(value[1]), 1)
-        HAPI.set_parm_float_value(self.session.hapi_session, \
-                    self.node_id, self.id, float(value[2]), 2)
-
-    def get_value(self):
-        values = []
-        for index in range(3):
-            values.append(HAPI.get_parm_float_value(self.session.hapi_session, self.node_id, self.name, index))
-        return values
-
-class HParmVector4(HParm):
-
-    def set_value(self, value):
-        valid = (isinstance(value, list) or isinstance(value, np.ndarray)) and len(value)==4
-        if not valid:
-            raise TypeError("Parameter to set need to be list or ndarray of length 4")
-        HAPI.set_parm_float_value(self.session.hapi_session, \
-                    self.node_id, self.id, float(value[0]), 0)
-        HAPI.set_parm_float_value(self.session.hapi_session, \
-                    self.node_id, self.id, float(value[1]), 1)
-        HAPI.set_parm_float_value(self.session.hapi_session, \
-                    self.node_id, self.id, float(value[2]), 2)
-        HAPI.set_parm_float_value(self.session.hapi_session, \
-                    self.node_id, self.id, float(value[3]), 3)
-
-    def get_value(self):
-        values = []
-        for index in range(4):
-            values.append(HAPI.get_parm_float_value(self.session.hapi_session, self.node_id, self.name, index))
-        return values
-        
-class HParmIntVector2(HParm):
-    
-    def set_value(self, value):
-        valid = (isinstance(value, list) or isinstance(value, np.ndarray)) and len(value)==4
-        if not valid:
-            raise TypeError("Parameter to set need to be list or ndarray of length 4")
-        HAPI.set_parm_int_value(self.session.hapi_session, \
-                    self.node_id, self.id, int(value[0]), 0)
-        HAPI.set_parm_int_value(self.session.hapi_session, \
-                    self.node_id, self.id, int(value[1]), 1)
-
-    def get_value(self):
-        values = []
-        for index in range(2):
-            values.append(HAPI.get_parm_int_value(self.session.hapi_session, self.node_id, self.name, index))
-        return values
-
-class HParmIntVector3(HParm):
-    
-    def set_value(self, value):
-        valid = (isinstance(value, list) or isinstance(value, np.ndarray)) and len(value)==4
-        if not valid:
-            raise TypeError("Parameter to set need to be list or ndarray of length 4")
-        HAPI.set_parm_int_value(self.session.hapi_session, \
-                    self.node_id, self.id, float(value[0]), 0)
-        HAPI.set_parm_int_value(self.session.hapi_session, \
-                    self.node_id, self.id, float(value[1]), 1)
-        HAPI.set_parm_int_value(self.session.hapi_session, \
-                    self.node_id, self.id, float(value[2]), 2)
-
-    def get_value(self):
-        values = []
-        for index in range(3):
-            values.append(HAPI.get_parm_int_value(self.session.hapi_session, self.node_id, self.name, index))
-        return values
-
-class HParmIntVector4(HParm):
-    
-    def set_value(self, value):
-        valid = (isinstance(value, list) or isinstance(value, np.ndarray)) and len(value)==4
-        if not valid:
-            raise TypeError("Parameter to set need to be list or ndarray of length 4")
-        HAPI.set_parm_int_value(self.session.hapi_session, \
-                    self.node_id, self.id, float(value[0]), 0)
-        HAPI.set_parm_int_value(self.session.hapi_session, \
-                    self.node_id, self.id, float(value[1]), 1)
-        HAPI.set_parm_int_value(self.session.hapi_session, \
-                    self.node_id, self.id, float(value[2]), 2)
-        HAPI.set_parm_int_value(self.session.hapi_session, \
-                    self.node_id, self.id, float(value[3]), 3)
-
-    def get_value(self):
-        values = []
-        for index in range(4):
-            values.append(HAPI.get_parm_int_value(self.session.hapi_session, self.node_id, self.name, index))
-        return values
-
+class HParmVector2(HParmFloat):
+    pass
+class HParmVector3(HParmFloat):
+    pass
+class HParmVector4(HParmFloat):
+    pass
+class HParmIntVector2(HParmInt):
+    pass
+class HParmIntVector3(HParmInt):
+    pass
+class HParmIntVector4(HParmInt):
+    pass
 class HParmColor(HParmVector3):
     pass
 class HParmColorAlpha(HParmVector4):
@@ -271,14 +185,68 @@ class HParmToggle(HParm):
         val = HAPI.get_parm_int_value(self.session.hapi_session, self.node_id, self.name, 0)
         return True if val == 1 else False
 
-class HParmChoice(HParmInt):
-    pass
+class HParmChoice(HParm):
+    
+    def __init__(self, session, parm_info, node_id, param_choice_lists):
+        super(HParmChoice, self).__init__(session, parm_info, node_id)
+        choices = param_choice_lists[parm_info.id]
+        self.choice_labels = []
+        self.choice_values = []
+        for choice in choices:
+            self.choice_labels.append(HAPI.get_string(session.hapi_session, choice.labelSH))
+            self.choice_values.append(HAPI.get_string(session.hapi_session, choice.valueSH))
 
-class HParmIntChoice(HParmInt):
-    pass
+    def get_choice_labels(self):
+        return self.choice_labels
 
-class HParmStringChoice(HParmString):
-    pass
+    def get_choice_values(self):
+        return self.choice_values
+
+class HParmIntChoice(HParmChoice):
+
+    def __init__(self, session, parm_info, node_id, param_choice_lists):
+        super(HParmIntChoice, self).__init__(session, parm_info, node_id, param_choice_lists)
+        self.choice_values = list(range(0, parm_info.choiceCount))
+
+    def set_value(self, index):
+        if not isinstance(index, int):
+            raise TypeError("Index to set is not int")
+        if index < 0 or index >= len(self.choice_values):
+            raise IndexError("Index should be between 0 and {0}".format(len(self.choice_values)))
+        HAPI.set_parm_int_value(self.session.hapi_session, \
+                    self.node_id, self.name, int(self.choice_values[index]), 0)
+
+    def get_value(self):
+        return HAPI.get_parm_int_value(self.session.hapi_session, self.node_id, self.name, 0)
+
+class HParmStringChoice(HParmChoice):
+    
+    def __init__(self, session, parm_info, node_id, param_choice_lists):
+        super(HParmStringChoice, self).__init__(session, parm_info, node_id, param_choice_lists)
+        choices = param_choice_lists[parm_info.id]
+        self.choice_values = []
+        for choice in choices:
+            self.choice_values.append(HAPI.get_string(session.hapi_session, choice.valueSH))
+
+    def set_value(self, index):
+        if not isinstance(index, int):
+            raise TypeError("Index to set is not int")
+        if index < 0 or index >= len(self.choice_values):
+            raise IndexError("Index should be between 0 and {0}".format(len(self.choice_values)))
+        HAPI.set_parm_string_value(self.session.hapi_session, \
+                    self.node_id, self.name, self.choice_values[index], 0)
+
+    def get_value(self):
+        return HAPI.get_parm_string_value(self.session.hapi_session, self.node_id, self.name, 0)
+
+class HParmLabel(HParm):
+
+    def set_value(self):
+        raise NotImplementedError("Do not set value for label")
+
+    def get_value(self, value):
+        raise NotImplementedError("Do not get value from label")
+
 
 PARMTYPE_TO_HPARM = {
     HDATA.PrmScriptType.INT : HParmInt,
@@ -287,8 +255,8 @@ PARMTYPE_TO_HPARM = {
     HDATA.PrmScriptType.STRING : HParmString,
     HDATA.PrmScriptType.FILE : HParmFile,
     HDATA.PrmScriptType.IMAGE : HParmFileImage,
-    HDATA.PrmScriptType.DIRECTORY : HParmFileImage,
-    HDATA.PrmScriptType.GEOMETRY  : HParmFileDirectory,
+    HDATA.PrmScriptType.DIRECTORY : HParmFileDirectory,
+    HDATA.PrmScriptType.GEOMETRY  : HParmFileGeometry,
     HDATA.PrmScriptType.TOGGLE : HParmToggle,
     HDATA.PrmScriptType.BUTTON : HParmButton,
     HDATA.PrmScriptType.VECTOR2 : HParmVector2,
@@ -302,8 +270,9 @@ PARMTYPE_TO_HPARM = {
     HDATA.PrmScriptType.COLOR4 : HParmColorAlpha,
     HDATA.PrmScriptType.OPPATH  : HParmNode,
     # missing OPLIST, OBJECT ...etc
-    HDATA.PrmScriptType.RAMP_FLT : HParmRampFloat,
-    HDATA.PrmScriptType.RAMP_RGB  : HParmRampColor,
+    # HDATA.PrmScriptType.RAMP_FLT : HParmRampFloat,
+    # HDATA.PrmScriptType.RAMP_RGB  : HParmRampColor,
+    HDATA.PrmScriptType.LABEL : HParmLabel
 }
 
 class HParmFactory():
@@ -311,16 +280,26 @@ class HParmFactory():
     def __init__(self, session, node_id):
         self.session = session
         self.node_id = node_id
+        self.param_choice_lists = {}
+
+        choice_lists = HAPI.get_parm_choice_lists(self.session.hapi_session, self.node_id)
+        self.param_choice_lists.clear()
+        for c in choice_lists:
+            if c.parentParmId not in self.param_choice_lists:
+                self.param_choice_lists[c.parentParmId] = []
+            self.param_choice_lists[c.parentParmId].append(c)
 
     def get_parm(self, parm_info):
-        if parm_info.choiceCount > 0 and parm_info.is_int():
-            parm = HParmIntChoice(self.session, parm_info, self.node_id)
+        if parm_info.is_non_value() or parm_info.type == HDATA.ParmType.FOLDERLIST:
+            parm = None
+        elif parm_info.scriptType is HDATA.PrmScriptType.TOGGLE: # toggle has choice count, check beforehand
+            parm = HParmToggle(self.session, parm_info, self.node_id)
+        elif parm_info.choiceCount > 0 and parm_info.is_int():
+            parm = HParmIntChoice(self.session, parm_info, self.node_id, self.param_choice_lists)
         elif parm_info.choiceCount > 0 and parm_info.is_string():
-            parm = HParmStringChoice(self.session, parm_info, self.node_id)
+            parm = HParmStringChoice(self.session, parm_info, self.node_id, self.param_choice_lists)
         elif parm_info.scriptType in PARMTYPE_TO_HPARM.keys():
             parm = PARMTYPE_TO_HPARM[parm_info.scriptType](self.session, parm_info, self.node_id)
-        elif parm_info.is_non_value():
-            parm = None
         else:
             #parm = HParm(self.session, parm_info, self.node_id)
             parm = None
