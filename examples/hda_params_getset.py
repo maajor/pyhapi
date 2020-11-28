@@ -18,8 +18,8 @@ def main():
 
     #Query node's parameters
     logging.info("Node has parameter count: {0}".format(len(asset_node.get_param_names())))
-    for name in asset_node.get_param_names():
-        logging.info("Query param: {0} has value: {1}".format(name, asset_node.get_param_value(name)))
+    for param in asset_node.get_visible_params():
+        logging.info("Query param: {0} has value: {1}".format(param.get_name(), param.get_value()))
 
     #Set node's parameters
     asset_node.set_param_value("seed", 1.0)

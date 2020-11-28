@@ -76,6 +76,21 @@ You can get and set all paramters on an node's interface, even press a button
     #Press button
     asset_node.press_button("rop_geometry1_execute", status_report_interval=1.0)
 
+    hda_asset = ph.HAsset(session, "hda/dummy_params.hda")
+    asset_node = hda_asset.instantiate(node_name="params")
+
+    #Setting multi-size parameters
+    asset_node.set_param_value("intvec3", [1, 1, 1])
+    asset_node.set_param_value("vec4", [0.5, 0.6, 0.7, 0.8])
+    asset_node.set_param_value("color", [0.3, 0.4, 0.5])
+    asset_node.set_param_value("toggle", True)
+    asset_node.set_param_value("strings5", ["str0", "str1", "str2", "str3", "str4"])
+
+    #Getting/Setting choice
+    parm = asset_node.get_param("ordermenu")
+    print("{0} is type {1}, has choice {2}".format(parm.get_name(), parm, parm.get_choice_values()))
+    parm.set_value(index=1)
+
 
 Save/Load HIP file
 --------------------------------------------

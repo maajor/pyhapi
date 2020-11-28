@@ -201,12 +201,22 @@ class HNodeBase():
             parm = parm_factory.get_parm(self.param_info[i])
             # not collect invisible parms!
             if parm:
-                self.parms[parm.name] = parm
+                self.parms[parm.get_name()] = parm
 
     def get_visible_params(self):
+        """Get all visible param in this node
+
+        Returns:
+            [HParm]: all visible params
+        """
         return [param for param in self.parms.values() if not param.invisible]
 
     def get_all_params(self):
+        """Get all param in this node
+
+        Returns:
+            [HParm]: all params
+        """
         return self.parms.values()
 
     def refresh_params(self):
@@ -219,6 +229,14 @@ class HNodeBase():
             [str]: Name of all params
         """
         return self.parms.keys()
+
+    def get_param(self, param_name):
+        """Get all param in this node
+
+        Returns:
+            [str]: Name of all params
+        """
+        return self.parms[param_name]
 
     def get_param_type(self, param_name):
         """Get param's type by name
@@ -314,7 +332,7 @@ class HNodeBase():
         #paramid = self.param_id_dict[param_name]
         #paraminfo = self.param_info[paramid]
         param = self.parms[param_name]
-        param.press_button(status_report_interval, status_verbosity)
+        param.press(status_report_interval, status_verbosity)
 
     async def press_button_async(self, param_name, status_report_interval=5.0, status_verbosity=HDATA.StatusVerbosity.ALL):
         """Press button in this node in async/non-blocking manner

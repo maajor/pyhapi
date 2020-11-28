@@ -12,7 +12,7 @@ from .hasset import HAsset
 from .hparm import *
 from . import hapi as HAPI
 
-__version__ = "0.0.3b2"
+__version__ = "0.0.4b0"
 
 
 import platform

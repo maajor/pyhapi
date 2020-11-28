@@ -86,6 +86,7 @@ asset_node.press_button("foo_execute")
 ```
 See more in  
 [Example: hda_params_getset](https://github.com/maajor/pyhapi/blob/master/examples/hda_params_getset.py)  
+[Example: hparms_getset](https://github.com/maajor/pyhapi/blob/master/examples/hparms_getset.py) 
 
 ## Save HIP file  
 ```

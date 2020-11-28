@@ -82,6 +82,15 @@ def test_get_node_geo_mesh(init_session):
     _x, _y = _ps.shape
     assert _x == 8 and _y == 3
 
+def test_get_node_geo_stringattrib(init_session):
+    """Test get node geo
+    """
+    hda_asset = ph.HAsset(init_session, "hda/string_attrib.hda")
+    asset_node = hda_asset.instantiate(node_name="TestObject").cook()
+    asset_geos = asset_node.get_display_geos()
+    debugstr = asset_geos[0].get_attrib_data(ph.AttributeOwner.POINT, "debug")
+    assert debugstr[3,0] == "debug3"
+
 def test_get_node_geo_curve(init_session):
     """Test get node geo curve
     """
@@ -97,7 +106,7 @@ def test_get_params_len(init_session):
     """
     hda_asset = ph.HAsset(init_session, "hda/SideFX_spaceship.otl")
     asset_node = hda_asset.instantiate(node_name="Spaceship")
-    assert len(asset_node.get_param_names()) == 96
+    assert len(asset_node.get_param_names()) == 72
 
 def test_get_param_int(init_session):
     """Test get int param
@@ -150,6 +159,47 @@ def test_press_button(init_session):
     hda_asset = ph.HAsset(init_session, "hda/SideFX_spaceship.otl")
     asset_node = hda_asset.instantiate(node_name="Spaceship")
     asset_node.press_button("rop_geometry1_execute")
+
+def test_set_param_vec4(init_session):
+    """Test set float param
+    """
+    hda_asset = ph.HAsset(init_session, "hda/dummy_params.hda")
+    asset_node = hda_asset.instantiate(node_name="params")
+    asset_node.set_param_value("vec4", [0.4,0.5,0.6,0.7])
+    assert pytest.approx(asset_node.get_param_value("vec4")[3]) == 0.7
+
+def test_set_param_intvec3(init_session):
+    """Test set float param
+    """
+    hda_asset = ph.HAsset(init_session, "hda/dummy_params.hda")
+    asset_node = hda_asset.instantiate(node_name="params")
+    asset_node.set_param_value("intvec3", [1, 1, 1])
+    assert asset_node.get_param_value("intvec3")[2] == 1
+
+def test_set_param_strings(init_session):
+    """Test set float param
+    """
+    hda_asset = ph.HAsset(init_session, "hda/dummy_params.hda")
+    asset_node = hda_asset.instantiate(node_name="params")
+    asset_node.set_param_value("strings5", ["str0", "str1", "str2", "str3", "str4"])
+    assert asset_node.get_param_value("strings5")[2] == "str2"
+
+def test_set_param_color(init_session):
+    """Test set float param
+    """
+    hda_asset = ph.HAsset(init_session, "hda/dummy_params.hda")
+    asset_node = hda_asset.instantiate(node_name="params")
+    asset_node.set_param_value("color", [0.3, 0.4, 0.5])
+    assert pytest.approx(asset_node.get_param_value("color")[1]) == 0.4
+
+
+def test_set_param_toggle(init_session):
+    """Test set float param
+    """
+    hda_asset = ph.HAsset(init_session,"hda/dummy_params.hda")
+    asset_node = hda_asset.instantiate(node_name="params")
+    asset_node.set_param_value("toggle", True)
+    assert asset_node.get_param_value("toggle") == True
 
 @pytest.mark.asyncio
 async def test_press_button_async(init_session):
