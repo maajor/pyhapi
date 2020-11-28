@@ -3,6 +3,8 @@
 
 Object-Oriented Python Wrapper for Houdini Engine's C API
 
+Note that this is 3rd party binding, not official.
+
 # Documentation  
 
 Please visit [pyhapi documentation](https://pyhapi.readthedocs.io).  
@@ -84,6 +86,7 @@ asset_node.press_button("foo_execute")
 ```
 See more in  
 [Example: hda_params_getset](https://github.com/maajor/pyhapi/blob/master/examples/hda_params_getset.py)  
+[Example: hparms_getset](https://github.com/maajor/pyhapi/blob/master/examples/hparms_getset.py) 
 
 ## Save HIP file  
 ```
@@ -129,7 +132,7 @@ executor = ThreadPoolExecutor(max_workers=4)
 for i in range(0,4):
     executor.submit(producer, i)
 ```
-[Example: multisession_run](https://github.com/maajor/pyhapi/blob/master/examples/multisession_producer_threaded.py)  
+[Example: multisession_producer_threaded](https://github.com/maajor/pyhapi/blob/master/examples/multisession_producer_threaded.py)  
 
 ### Flask Server Demo  
-[Example: multisession_run](https://github.com/maajor/pyhapi/blob/master/examples/server_demo.py)  
+[Example: server_demo](https://github.com/maajor/pyhapi/blob/master/examples/server_demo.py)  

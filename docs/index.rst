@@ -8,6 +8,8 @@ Welcome to pyhapi's documentation!
 
 pyhapi is an object-oriented python wrapper for houdini engine's c API
 
+Note that this is 3rd party binding, not official.
+
 * License: MIT License
 * Home: https://github.com/maajor/pyhapi
 * Documentation: https://pyhapi.readthedocs.io

@@ -1,12 +1,20 @@
 Changelog
 ========================================
 
+0.0.4b0
+-----------------------
+
+* Add HParm class, make parameters object-oriented. supporting get range, implememt basic types of params include
+    * vec2, vec3, vec4, intvec2, intvec3, intvec4, color, coloralpha, choice, label, toggle
+* Fix bug on getting string attributes
+
+
 0.0.3b1
 -----------------------
 
 * Update HSessionPool to support threaded task producer
     * Add example to create flask houdini server
-* Fox some bugs on setting parameter fail onto node
+* Fix some bugs on setting parameter fail onto node
 
 0.0.3b0
 -----------------------
