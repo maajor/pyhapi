@@ -30,7 +30,7 @@ author = 'Maajor'
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = '0.0.4b0'
+release = '0.0.4b1'
 
 
 # -- General configuration ---------------------------------------------------

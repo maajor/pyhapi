@@ -19,13 +19,17 @@ async def session_task(session : ph.HSession, filename, seed):
 
 @app.route('/sample', methods=['POST'])
 def sample():
+    seed = request.json['seed']
+    filename = datetime.datetime.now().strftime("%m%d%Y%H%M%S")
+    fut = ph.HSessionManager.get_or_create_session_pool().enqueue_task(session_task, filename, seed)
+    while not fut.done():
+        time.sleep(0.1)
     try:
-        seed = request.json['seed']
-        filename = datetime.datetime.now().strftime("%m%d%Y%H%M%S")
-        fut = ph.HSessionManager.get_or_create_session_pool().enqueue_task(session_task, filename, seed)
-        while not fut.done():
-            time.sleep(0.1)
-        return send_file("{0}.obj".format(filename))
+        succeed, e = fut.result()
+        if succeed:
+            return send_file("{0}.obj".format(filename))
+        else:
+            return repr(e), 401
     except Exception as e:
         print(e)
 

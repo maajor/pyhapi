@@ -265,6 +265,14 @@ class HParmNode(HParm):
         """
         return HAPI.get_parm_string_value(self.session.hapi_session, self.node_id, self.get_name(), 0)
 
+class HParmLogFloat(HParmFloat):
+    """A class for houdini engine's vector2 parameter
+    """
+    pass
+class HParmLogInt(HParmInt):
+    """A class for houdini engine's vector2 parameter
+    """
+    pass
 class HParmVector2(HParmFloat):
     """A class for houdini engine's vector2 parameter
     """
@@ -523,7 +531,9 @@ PARMTYPE_TO_HPARM = {
     # missing OPLIST, OBJECT ...etc
     # HDATA.PrmScriptType.RAMP_FLT : HParmRampFloat,
     # HDATA.PrmScriptType.RAMP_RGB  : HParmRampColor,
-    HDATA.PrmScriptType.LABEL : HParmLabel
+    HDATA.PrmScriptType.LABEL : HParmLabel,
+    HDATA.PrmScriptType.FLOAT_LOG : HParmLogFloat,
+    HDATA.PrmScriptType.INT_LOG : HParmLogInt
 }
 
 class HParmFactory():

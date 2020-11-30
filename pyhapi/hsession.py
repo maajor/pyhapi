@@ -496,10 +496,9 @@ class HSessionPool():
             try:
                 avail_session = self.sessions[i]
                 fut, task_to_proceed, *args = await self.task_queue.get()
-                got_obj = True
-
                 running_coro = asyncio.wait_for(task_to_proceed(avail_session, *args), self._max_task_time, loop=self._loop)
                 await running_coro
+                got_obj = True
             except asyncio.CancelledError as e:
                 logging.info("Worker {0} is Cancelled".format(i))
                 break
@@ -512,10 +511,11 @@ class HSessionPool():
             except BaseException as e:
                 logging.exception(e)
                 logging.exception("Worker Call Failed")
+                fut.set_result((False, e))
             finally:
                 if got_obj:
-                    fut.set_result(True)
-                    self.task_queue.task_done()
+                    fut.set_result((True, "Succeed"))
+                self.task_queue.task_done()
 
     def __loop_in_thread(self, loop, task):
         asyncio.set_event_loop(loop)
