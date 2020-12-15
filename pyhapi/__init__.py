@@ -12,7 +12,7 @@ from .hasset import HAsset
 from .hparm import *
 from . import hapi as HAPI
 
-__version__ = "0.0.4b1"
+__version__ = "0.0.4b2"
 
 
 import platform
@@ -35,12 +35,23 @@ def __check_libpath(libpath):
     return os.path.exists(os.path.join(libpath,libdll) )
 
 def __ensure_hapi_path(libpath):
-    path_env = os.environ['PATH'].split(';')
+    sys_platform = platform.system()
+    if sys_platform == "Windows":
+        path_env = os.environ['PATH'].split(';')
+    elif sys_platform == "Linux":
+        path_env = os.environ['LD_LIBRARY_PATH'].split(':')
+    else:
+        path_env = os.environ['DYLD_LIBRARY_PATH'].split(':')
     if libpath or __check_libpath(libpath):
         print(not libpath)
         if not os.path.normpath(libpath) in [os.path.normpath(p) for p in path_env]:
             path_env.append(libpath)
-            os.environ['PATH']=';'.join(path_env)
+            if sys_platform == "Windows":
+                os.environ['PATH']=';'.join(path_env)
+            elif sys_platform == "Linux":
+                os.environ['LD_LIBRARY_PATH']=':'.join(path_env)
+            else:
+                os.environ['DYLD_LIBRARY_PATH']=':'.join(path_env)
         return True
     else:
         return any([__check_libpath(p) for p in path_env])

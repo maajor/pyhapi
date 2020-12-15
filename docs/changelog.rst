@@ -1,6 +1,17 @@
 Changelog
 ========================================
 
+0.0.4b2
+-----------------------
+
+* Fix path cannot find bug on Linux
+
+0.0.4b1
+-----------------------
+
+* Add HParmLogFloat and HParmLogInt to support log parm
+* Add return exception support for HSessionPool
+
 0.0.4b0
 -----------------------
 
